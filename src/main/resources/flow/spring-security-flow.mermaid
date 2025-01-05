@@ -1,0 +1,15 @@
+graph TD
+    A[HTTP Request] -->|1. Gửi yêu cầu| B[FilterChain]
+    B -->|2. Chuyển yêu cầu| C[SecurityFilterChain]
+    C -->|3. Xác thực| D{Đã xác thực?}
+    D -->|Có| E[AccessDecisionManager]
+    D -->|Không| F[AuthenticationManager]
+    F -->|4. Xác thực| G{Xác thực thành công?}
+    G -->|Có| E
+    G -->|Không| H[AuthenticationException]
+    E -->|5. Kiểm tra quyền| I{Có quyền truy cập?}
+    I -->|Có| J[Protected Resource]
+    I -->|Không| K[AccessDeniedException]
+    J -->|6. Trả về kết quả| L[HTTP Response]
+    H -->|Trả về lỗi| L
+    K -->|Trả về lỗi| L
