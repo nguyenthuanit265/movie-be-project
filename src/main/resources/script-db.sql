@@ -1,0 +1,114 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable vector extension for AI features
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create enum types
+CREATE TYPE user_role AS ENUM ('user', 'admin', 'moderator');
+
+-- Users table
+CREATE TABLE users (
+                       id UUID PRIMARY KEY,
+                       email VARCHAR(255) UNIQUE NOT NULL,
+                       password_hash VARCHAR(255),
+                       full_name VARCHAR(255) NOT NULL,
+                       role user_role NOT NULL DEFAULT 'user',
+                       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                       is_active BOOLEAN DEFAULT false,
+                       social_provider VARCHAR(50),
+                       social_id VARCHAR(255),
+                       CONSTRAINT proper_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    );
+
+-- Movies table
+CREATE TABLE movies (
+                        id UUID PRIMARY KEY ,
+                        title VARCHAR(255) NOT NULL,
+                        original_title VARCHAR(255),
+                        overview TEXT,
+                        release_date DATE,
+                        runtime FLOAT,
+                        poster_path VARCHAR(255),
+                        backdrop_path VARCHAR(255),
+                        popularity FLOAT DEFAULT 0,
+                        vote_average FLOAT DEFAULT 0,
+                        vote_count INTEGER DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT positive_vote_average CHECK (vote_average >= 0 AND vote_average <= 10),
+                        CONSTRAINT positive_vote_count CHECK (vote_count >= 0)
+);
+
+-- Genres table
+CREATE TABLE genres (
+                        id UUID PRIMARY KEY ,
+                        name VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- Cast table
+CREATE TABLE casts (
+                       id UUID PRIMARY KEY ,
+                       name VARCHAR(255) NOT NULL,
+                       profile_path VARCHAR(255),
+                       biography TEXT,
+                       birth_date DATE,
+                       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Reviews table
+CREATE TABLE reviews (
+                         id UUID PRIMARY KEY ,
+                         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                         movie_id UUID NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
+                         content TEXT NOT NULL,
+                         rating FLOAT,
+                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                         CONSTRAINT valid_rating CHECK (rating >= 0 AND rating <= 10),
+                         CONSTRAINT one_review_per_user_movie UNIQUE (user_id, movie_id)
+);
+
+-- Movie-Genre relationship table
+CREATE TABLE movie_genres (
+                              movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+                              genre_id UUID REFERENCES genres(id) ON DELETE CASCADE,
+                              PRIMARY KEY (movie_id, genre_id)
+);
+
+-- Movie-Cast relationship table
+CREATE TABLE movie_casts (
+                             movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+                             cast_id UUID REFERENCES casts(id) ON DELETE CASCADE,
+                             character VARCHAR(255),
+                             role VARCHAR(100),
+                             PRIMARY KEY (movie_id, cast_id, character)
+);
+
+-- Watchlist table
+CREATE TABLE watchlists (
+                            user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                            movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+                            added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                            PRIMARY KEY (user_id, movie_id)
+);
+
+-- Favorites table
+CREATE TABLE favorites (
+                           user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                           movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+                           added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                           PRIMARY KEY (user_id, movie_id)
+);
+
+-- Search history table
+CREATE TABLE search_history (
+                                id UUID PRIMARY KEY ,
+                                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                                query TEXT NOT NULL,
+                                searched_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Movie vectors table for AI features
+CREATE TABLE movie_vectors (
+                               movie_id UUID REFERENCES movies(id) ON DELETE CASCADE PRIMARY KEY,
+                               embedding vector(384), -- Assuming using 384-dimensional embeddings
+                               updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
