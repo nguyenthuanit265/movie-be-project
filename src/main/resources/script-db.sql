@@ -1,5 +1,5 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable bigserial extension
+CREATE EXTENSION IF NOT EXISTS "bigserial-ossp";
 -- Enable vector extension for AI features
 CREATE EXTENSION IF NOT EXISTS vector;
 
@@ -8,7 +8,7 @@ CREATE TYPE user_role AS ENUM ('user', 'admin', 'moderator');
 
 -- Users table
 CREATE TABLE users (
-                       id UUID PRIMARY KEY,
+                       id bigserial PRIMARY KEY,
                        email VARCHAR(255) UNIQUE NOT NULL,
                        password_hash VARCHAR(255),
                        full_name VARCHAR(255) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE users (
 
 -- Movies table
 CREATE TABLE movies (
-                        id UUID PRIMARY KEY ,
+                        id bigserial PRIMARY KEY ,
                         title VARCHAR(255) NOT NULL,
                         original_title VARCHAR(255),
                         overview TEXT,
@@ -40,13 +40,13 @@ CREATE TABLE movies (
 
 -- Genres table
 CREATE TABLE genres (
-                        id UUID PRIMARY KEY ,
+                        id bigserial PRIMARY KEY ,
                         name VARCHAR(100) UNIQUE NOT NULL
 );
 
 -- Cast table
 CREATE TABLE casts (
-                       id UUID PRIMARY KEY ,
+                       id bigserial PRIMARY KEY ,
                        name VARCHAR(255) NOT NULL,
                        profile_path VARCHAR(255),
                        biography TEXT,
@@ -56,9 +56,9 @@ CREATE TABLE casts (
 
 -- Reviews table
 CREATE TABLE reviews (
-                         id UUID PRIMARY KEY ,
-                         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                         movie_id UUID NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
+                         id bigserial PRIMARY KEY ,
+                         user_id bigserial NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                         movie_id bigserial NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
                          content TEXT NOT NULL,
                          rating FLOAT,
                          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -68,15 +68,15 @@ CREATE TABLE reviews (
 
 -- Movie-Genre relationship table
 CREATE TABLE movie_genres (
-                              movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
-                              genre_id UUID REFERENCES genres(id) ON DELETE CASCADE,
+                              movie_id bigserial REFERENCES movies(id) ON DELETE CASCADE,
+                              genre_id bigserial REFERENCES genres(id) ON DELETE CASCADE,
                               PRIMARY KEY (movie_id, genre_id)
 );
 
 -- Movie-Cast relationship table
 CREATE TABLE movie_casts (
-                             movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
-                             cast_id UUID REFERENCES casts(id) ON DELETE CASCADE,
+                             movie_id bigserial REFERENCES movies(id) ON DELETE CASCADE,
+                             cast_id bigserial REFERENCES casts(id) ON DELETE CASCADE,
                              character VARCHAR(255),
                              role VARCHAR(100),
                              PRIMARY KEY (movie_id, cast_id, character)
@@ -84,31 +84,31 @@ CREATE TABLE movie_casts (
 
 -- Watchlist table
 CREATE TABLE watchlists (
-                            user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                            movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+                            user_id bigserial REFERENCES users(id) ON DELETE CASCADE,
+                            movie_id bigserial REFERENCES movies(id) ON DELETE CASCADE,
                             added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                             PRIMARY KEY (user_id, movie_id)
 );
 
 -- Favorites table
 CREATE TABLE favorites (
-                           user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                           movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+                           user_id bigserial REFERENCES users(id) ON DELETE CASCADE,
+                           movie_id bigserial REFERENCES movies(id) ON DELETE CASCADE,
                            added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                            PRIMARY KEY (user_id, movie_id)
 );
 
 -- Search history table
 CREATE TABLE search_history (
-                                id UUID PRIMARY KEY ,
-                                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                                id bigserial PRIMARY KEY ,
+                                user_id bigserial REFERENCES users(id) ON DELETE CASCADE,
                                 query TEXT NOT NULL,
                                 searched_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Movie vectors table for AI features
 CREATE TABLE movie_vectors (
-                               movie_id UUID REFERENCES movies(id) ON DELETE CASCADE PRIMARY KEY,
+                               movie_id bigserial REFERENCES movies(id) ON DELETE CASCADE PRIMARY KEY,
                                embedding vector(384), -- Assuming using 384-dimensional embeddings
                                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
