@@ -8,6 +8,7 @@ import com.be.repository.MovieRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -23,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -172,29 +174,39 @@ public class TMDBService {
 
 
     /*SYNC*/
-    public void syncTrendingMovies() {
+    @Async
+    public CompletableFuture<String> syncTrendingMovies() {
         try {
-            log.info("Starting sync of trending movies day");
-            TMDBTrendingResponse response = getTrending("day");
+            log.info("Started syncing trending movies");
+            try {
+                log.info("Starting sync of trending movies day");
+                TMDBTrendingResponse response = getTrending("day");
 
-            for (TMDBTrendingItemDTO item : response.getResults()) {
-                saveOrUpdateMovieTrending(item, CategoryType.TRENDING_DAY);
+                for (TMDBTrendingItemDTO item : response.getResults()) {
+                    saveOrUpdateMovieTrending(item, CategoryType.TRENDING_DAY);
+                }
+                log.info("Completed sync of {} trending movies day", response.getResults().size());
+            } catch (Exception e) {
+                log.error("Error syncing trending movies: ", e);
             }
-            log.info("Completed sync of {} trending movies day", response.getResults().size());
+
+            try {
+                log.info("Starting sync of trending movies week");
+                TMDBTrendingResponse response = getTrending("day");
+
+                for (TMDBTrendingItemDTO item : response.getResults()) {
+                    saveOrUpdateMovieTrending(item, CategoryType.TRENDING_WEEK);
+                }
+                log.info("Completed sync of {} trending movies week", response.getResults().size());
+            } catch (Exception e) {
+                log.error("Error syncing trending movies: ", e);
+            }
+
+            log.info("Completed syncing trending movies");
+            return CompletableFuture.completedFuture("Trending movies sync completed successfully");
         } catch (Exception e) {
             log.error("Error syncing trending movies: ", e);
-        }
-
-        try {
-            log.info("Starting sync of trending movies week");
-            TMDBTrendingResponse response = getTrending("day");
-
-            for (TMDBTrendingItemDTO item : response.getResults()) {
-                saveOrUpdateMovieTrending(item, CategoryType.TRENDING_WEEK);
-            }
-            log.info("Completed sync of {} trending movies week", response.getResults().size());
-        } catch (Exception e) {
-            log.error("Error syncing trending movies: ", e);
+            return CompletableFuture.completedFuture("Error syncing trending movies: " + e.getMessage());
         }
     }
 
