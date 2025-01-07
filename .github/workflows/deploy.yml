@@ -1,0 +1,82 @@
+name: Deploy to Production
+
+# Trigger workflow on push to main branch
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_IMAGE: nguyenthuanit265/demo-cicd
+
+    steps:
+      # Check out repository code
+      - uses: actions/checkout@v3
+
+      # Set up Java development environment
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Build Java application
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      # Create application configuration
+      - name: Create application.yml
+        run: |
+          mkdir -p src/main/resources
+          cat > src/main/resources/application.yml << EOF
+          server:
+            port: 8082
+          spring:
+            application:
+              name: demo-cicd
+          EOF
+
+      # Authenticate with Docker Hub
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and push Docker image
+      - name: Build and push Docker image
+        run: |
+          docker build -t $DOCKER_IMAGE:${{ github.sha }} .
+          docker push $DOCKER_IMAGE:${{ github.sha }}
+
+      # Deploy to production server
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Pull the new image
+            docker pull ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            
+            # Stop and remove the existing container
+            docker stop app-container-demo-cicd || true
+            docker rm app-container-demo-cicd || true
+            
+            # Run the new container
+            docker run -d \
+              --name app-container-demo-cicd \
+              -p 8082:8082 \
+              ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            
+            # Wait for container to start
+            sleep 15
+            
+            # Check container logs
+            echo "Container Logs:"
+            docker logs app-container-demo-cicd
