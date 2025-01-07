@@ -20,6 +20,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -253,7 +254,11 @@ public class TMDBService {
             category.setCreatedAt(ZonedDateTime.now());
             category.setUpdatedAt(ZonedDateTime.now());
 
-            movie.getCategories().add(category);
+            if (CollectionUtils.isEmpty(movie.getCategories())) {
+                movie.setCategories(new HashSet<>(List.of(category)));
+            } else {
+                movie.getCategories().add(category);
+            }
 
             // Save to database
             movieRepository.save(movie);
