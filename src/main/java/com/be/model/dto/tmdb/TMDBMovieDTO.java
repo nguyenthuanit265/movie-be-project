@@ -1,5 +1,6 @@
 package com.be.model.dto.tmdb;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,15 +13,28 @@ import java.util.List;
 public class TMDBMovieDTO {
     private Long id;
     private String title;
-    private String original_title;
+    @JsonProperty("original_title")
+    private String originalTitle;
     private String overview;
-    private String release_date;
+    @JsonProperty("release_date")
+    private String releaseDate;
     private Integer runtime;
-    private String poster_path;
-    private String backdrop_path;
+    @JsonProperty("poster_path")
+    private String posterPath;
+    @JsonProperty("backdrop_path")
+    private String backdropPath;
     private Float popularity;
-    private Float vote_average;
-    private Integer vote_count;
+    @JsonProperty("vote_average")
+    private Float voteAverage;
+    @JsonProperty("vote_count")
+    private Integer voteCount;
     private List<TMDBGenreDTO> genres;
-    private List<TMDBCastDTO> credits;
+    private Boolean adult;
+    @JsonProperty("original_language")
+    private String originalLanguage;
+    private String status;
+    private String tagline;
+    private Boolean video;
+    @JsonProperty("imdb_id")
+    private String imdbId;
 }

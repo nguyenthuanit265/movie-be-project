@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.ZonedDateTime;
+
 @Entity
 @Table(name = "movie_vectors")
 @Getter
@@ -12,7 +14,7 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MovieVector extends BaseEntity {
+public class MovieVector {
     @Id
     private Long movieId;
 
@@ -24,4 +26,7 @@ public class MovieVector extends BaseEntity {
     @JdbcTypeCode(SqlTypes.OTHER)
     @Column(name = "embedding", columnDefinition = "vector(384)")
     private double[] embedding; // Changed to double[] from Float[]
+
+    @Column(name = "updated_at")
+    private ZonedDateTime updatedAt = ZonedDateTime.now();
 }

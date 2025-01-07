@@ -57,7 +57,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
 //            userByEmailBuilder.authorities(getAuthorities(user.get().getRoles()));
 //        }
 
-        user.get().setRole(userRole);
+        user.get().setRole(userRole.name());
         return UserPrincipal.create(user.get());
     }
 

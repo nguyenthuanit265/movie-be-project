@@ -2,10 +2,10 @@ package com.be.controller;
 
 import com.be.config.JwtTokenProvider;
 import com.be.model.base.AppResponse;
-import com.be.model.dto.AuthRequest;
-import com.be.model.dto.AuthResponse;
-import com.be.model.dto.SignUpRequest;
-import com.be.model.dto.UserDto;
+import com.be.model.dto.auth.AuthRequest;
+import com.be.model.dto.auth.AuthResponse;
+import com.be.model.dto.auth.SignUpRequest;
+import com.be.model.dto.auth.UserDto;
 import com.be.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

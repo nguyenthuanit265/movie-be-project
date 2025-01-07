@@ -104,7 +104,9 @@ public class SpringSecurityConfig {
                         .ignoringRequestMatchers("/api/**"))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/sign-up", "/api/v1/auth/login").permitAll()
-                        // .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+
+                        .requestMatchers("/api/tmdb/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/all").permitAll()
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()

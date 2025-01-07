@@ -2,6 +2,7 @@ package com.be.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.util.Set;
 
@@ -26,8 +27,8 @@ public class User extends BaseEntity {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Enumerated(EnumType.STRING)
-    private UserRole role = UserRole.user;
+    @Column(name = "role")
+    private String role = UserRole.user.name();
 
     @Column(name = "is_active")
     private Boolean isActive = false;

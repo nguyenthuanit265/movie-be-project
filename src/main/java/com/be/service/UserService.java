@@ -1,7 +1,7 @@
 package com.be.service;
-import com.be.model.dto.SignUpRequest;
-import com.be.model.dto.SpringSecurityUserDetailsDto;
-import com.be.model.dto.UserDto;
+import com.be.model.dto.auth.SignUpRequest;
+import com.be.model.dto.auth.SpringSecurityUserDetailsDto;
+import com.be.model.dto.auth.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
