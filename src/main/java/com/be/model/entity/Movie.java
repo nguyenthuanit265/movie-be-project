@@ -76,6 +76,18 @@ public class Movie extends BaseEntity {
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MovieTrailer> movieTrailers = new HashSet<>();
 
+    @OneToMany(mappedBy = "movie")
+    private Set<MovieRating> ratings;
+
+    @ManyToMany(mappedBy = "favorites")
+    private Set<User> favoritedBy;
+
+    @ManyToMany(mappedBy = "watchlist")
+    private Set<User> watchlistedBy;
+
+    @OneToMany(mappedBy = "movie")
+    private Set<Review> reviews;
+
     public boolean isInCategory(CategoryType category) {
         return categories.stream()
                 .anyMatch(mc -> Objects.equals(mc.getCategory(), category.name()));
@@ -90,5 +102,13 @@ public class Movie extends BaseEntity {
     public void removeTrailer(MovieTrailer trailer) {
         movieTrailers.remove(trailer);
         trailer.setMovie(null);
+    }
+
+    public Float getAverageRating() {
+        if (ratings == null || ratings.isEmpty()) return 0f;
+        return (float) ratings.stream()
+                .mapToDouble(MovieRating::getValue)
+                .average()
+                .orElse(0.0);
     }
 }
