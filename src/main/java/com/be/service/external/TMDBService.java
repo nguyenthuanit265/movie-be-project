@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class TMDBService {
-
     private final RestTemplate restTemplate;
     private final MovieRepository movieRepository;
     private final MovieTrailerRepository movieTrailerRepository;

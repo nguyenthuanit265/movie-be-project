@@ -5,8 +5,7 @@ import com.be.model.dto.MovieDTO;
 import com.be.model.dto.MovieTrailerDTO;
 import com.be.model.entity.Movie;
 import com.be.model.entity.MovieTrailer;
-import com.be.repository.MovieRepository;
-import com.be.repository.MovieTrailerRepository;
+import com.be.repository.*;
 import com.be.service.MovieService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,11 +23,20 @@ import java.util.stream.Collectors;
 public class MovieServiceImpl implements MovieService {
     private final MovieRepository movieRepository;
     private final MovieTrailerRepository movieTrailerRepository;
+    private final UserRepository userRepository;
+    private final MovieRatingRepository ratingRepository;
+    private final ReviewRepository reviewRepository;
 
     public MovieServiceImpl(MovieRepository movieRepository,
-                            MovieTrailerRepository movieTrailerRepository) {
+                            MovieTrailerRepository movieTrailerRepository,
+                            UserRepository userRepository,
+                            MovieRatingRepository ratingRepository,
+                            ReviewRepository reviewRepository) {
         this.movieRepository = movieRepository;
         this.movieTrailerRepository = movieTrailerRepository;
+        this.userRepository = userRepository;
+        this.ratingRepository = ratingRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     public MovieDTO toMovieDTO(Movie movie) {
