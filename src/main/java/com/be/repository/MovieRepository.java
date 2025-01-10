@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 
 @Repository
@@ -24,11 +25,9 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     @Query("SELECT DISTINCT m FROM Movie m " +
             "JOIN m.categories mc " +
             "WHERE mc.category = :category " +
-            "AND mc.updatedAt >= :after " +
             "ORDER BY m.popularity DESC")
     Page<Movie> findMovieByCategory(
-            @Param("category") CategoryType category,
-            @Param("after") LocalDateTime after,
+            @Param("category") String category,
             Pageable pageable
     );
 }

@@ -107,6 +107,11 @@ public class SpringSecurityConfig {
 
                         .requestMatchers("/api/tmdb/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/all").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/trending/day").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/trending/week").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/popular").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/{id}/trailers").permitAll()
+                        .requestMatchers("/api/movies/*/trailers").permitAll()
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()

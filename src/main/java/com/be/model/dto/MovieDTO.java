@@ -46,4 +46,10 @@ public class MovieDTO {
     private Integer voteCount;
 
     private Set<GenreDTO> genres;
+
+    @JsonProperty("poster_url")
+    private String posterUrl;
+
+    @JsonProperty("backdrop_url")
+    private String backdropUrl;
 }

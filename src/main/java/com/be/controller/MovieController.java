@@ -4,6 +4,8 @@ package com.be.controller;
 import com.be.model.base.AppResponse;
 import com.be.model.base.PageResponse;
 import com.be.model.dto.MovieDTO;
+import com.be.model.dto.MovieTrailerDTO;
+import com.be.model.entity.CategoryType;
 import com.be.service.MovieService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/movies")
 @Slf4j
 public class MovieController {
-    private final HttpServletRequest request;  // For getting request path
+    private final HttpServletRequest request;
     private final MovieService movieService;
 
     public MovieController(HttpServletRequest request, MovieService movieService) {
@@ -25,17 +27,39 @@ public class MovieController {
         this.movieService = movieService;
     }
 
-//    @GetMapping("/trending/today")
-//    public ResponseEntity<List<MovieDTO>> getTrendingToday() {
-//        List<Movie> movies = movieService.getTrendingMoviesToday();
-//        return ResponseEntity.ok(convertToDTO(movies));
-//    }
-//
-//    @GetMapping("/trending/week")
-//    public ResponseEntity<List<MovieDTO>> getTrendingThisWeek() {
-//        List<Movie> movies = movieService.getTrendingMoviesThisWeek();
-//        return ResponseEntity.ok(convertToDTO(movies));
-//    }
+    @GetMapping("/trending/day")
+    public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMoviesTrendingByDay(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<MovieDTO> moviePage = movieService.findMovieByCategories(CategoryType.TRENDING_DAY.name(), PageRequest.of(page, size));
+        PageResponse<MovieDTO> pageResponse = PageResponse.of(moviePage);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Movies retrieved successfully",
+                HttpStatus.OK.value(),
+                pageResponse
+        ));
+    }
+
+    @GetMapping("/trending/week")
+    public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMoviesTrendingByWeek(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<MovieDTO> moviePage = movieService.findMovieByCategories(CategoryType.TRENDING_WEEK.name(), PageRequest.of(page, size));
+        PageResponse<MovieDTO> pageResponse = PageResponse.of(moviePage);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Movies retrieved successfully",
+                HttpStatus.OK.value(),
+                pageResponse
+        ));
+    }
 
     @GetMapping("/all")
     public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMovies(
@@ -54,6 +78,31 @@ public class MovieController {
         ));
     }
 
+    @GetMapping("/{movieId}/trailers")
+    public ResponseEntity<AppResponse<PageResponse<MovieTrailerDTO>>> getMovieTrailers(
+            @PathVariable Long movieId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+//        List<MovieTrailerDTO> trailers = movieService.getMovieTrailers(movieId);
+//
+//        return ResponseEntity.ok(AppResponse.buildResponse(
+//                null,
+//                request.getRequestURI(),
+//                "Movie trailers retrieved successfully",
+//                HttpStatus.OK.value(),
+//                trailers
+//        ));
+        Page<MovieTrailerDTO> movieTrailerPage = movieService.getMovieTrailers(movieId, PageRequest.of(page, size));
+        PageResponse<MovieTrailerDTO> pageResponse = PageResponse.of(movieTrailerPage);
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Movie trailers retrieved successfully",
+                HttpStatus.OK.value(),
+                pageResponse
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<AppResponse<Void>> handleException(Exception e) {
         log.error("Error in movie controller: ", e);
@@ -66,5 +115,22 @@ public class MovieController {
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),
                         null
                 ));
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMoviesPopular(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<MovieDTO> moviePage = movieService.findMovieByCategories(CategoryType.POPULAR.name(), PageRequest.of(page, size));
+        PageResponse<MovieDTO> pageResponse = PageResponse.of(moviePage);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Movies retrieved successfully",
+                HttpStatus.OK.value(),
+                pageResponse
+        ));
     }
 }

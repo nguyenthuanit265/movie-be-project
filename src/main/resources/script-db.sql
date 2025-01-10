@@ -139,3 +139,26 @@ CREATE TABLE movie_categories
     updated_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uk_movie_category UNIQUE (movie_id, category)
 );
+
+
+ALTER TABLE movies
+    ADD COLUMN poster_url VARCHAR(255),
+ADD COLUMN backdrop_url VARCHAR(255);
+
+
+
+CREATE TABLE movie_trailers
+(
+    id           BIGSERIAL PRIMARY KEY,
+    movie_id     BIGINT REFERENCES movies (id),
+    key          VARCHAR(50) NOT NULL,
+    name         VARCHAR(255),
+    site         VARCHAR(50),
+    type         VARCHAR(50),
+    official     BOOLEAN                  DEFAULT false,
+    published_at TIMESTAMP WITH TIME ZONE,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_movie_trailers_movie ON movie_trailers (movie_id);
+CREATE INDEX idx_movie_trailers_published ON movie_trailers (published_at DESC);

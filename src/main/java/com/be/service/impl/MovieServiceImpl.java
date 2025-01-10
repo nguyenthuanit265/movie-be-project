@@ -2,8 +2,11 @@ package com.be.service.impl;
 
 import com.be.model.dto.GenreDTO;
 import com.be.model.dto.MovieDTO;
+import com.be.model.dto.MovieTrailerDTO;
 import com.be.model.entity.Movie;
+import com.be.model.entity.MovieTrailer;
 import com.be.repository.MovieRepository;
+import com.be.repository.MovieTrailerRepository;
 import com.be.service.MovieService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,12 +23,15 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MovieServiceImpl implements MovieService {
     private final MovieRepository movieRepository;
+    private final MovieTrailerRepository movieTrailerRepository;
 
-    public MovieServiceImpl(MovieRepository movieRepository) {
+    public MovieServiceImpl(MovieRepository movieRepository,
+                            MovieTrailerRepository movieTrailerRepository) {
         this.movieRepository = movieRepository;
+        this.movieTrailerRepository = movieTrailerRepository;
     }
 
-    public MovieDTO toDTO(Movie movie) {
+    public MovieDTO toMovieDTO(Movie movie) {
         if (movie == null) return null;
 
         return MovieDTO.builder()
@@ -49,17 +55,19 @@ public class MovieServiceImpl implements MovieService {
                                         .build())
                                 .collect(Collectors.toSet()) :
                         null)
+                .backdropUrl(movie.getBackdropUrl())
+                .posterUrl(movie.getPosterUrl())
                 .build();
     }
 
     public List<MovieDTO> toDTOList(List<Movie> movies) {
         return movies.stream()
-                .map(this::toDTO)
+                .map(this::toMovieDTO)
                 .collect(Collectors.toList());
     }
 
-    public Page<MovieDTO> toDTOPage(Page<Movie> moviePage) {
-        return moviePage.map(this::toDTO);
+    public Page<MovieDTO> toMovieDTOPage(Page<Movie> moviePage) {
+        return moviePage.map(this::toMovieDTO);
     }
 
     public Page<Movie> searchMovies(String query, int page) {
@@ -72,6 +80,23 @@ public class MovieServiceImpl implements MovieService {
 
     @Transactional(readOnly = true)  // Add this
     public Page<MovieDTO> findAll(Pageable pageable) {
-        return toDTOPage(movieRepository.findAll(pageable));
+        return toMovieDTOPage(movieRepository.findAll(pageable));
+    }
+
+    @Transactional(readOnly = true)  // Add this
+    public Page<MovieDTO> findMovieByCategories(String category, Pageable pageable) {
+        return toMovieDTOPage(movieRepository.findMovieByCategory(category, pageable));
+    }
+
+    public List<MovieTrailerDTO> getMovieTrailers(Long movieId) {
+        List<MovieTrailer> trailers = movieTrailerRepository.findByMovieIdOrderByPublishedAtDesc(movieId);
+        return trailers.stream()
+                .map(MovieTrailerDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public Page<MovieTrailerDTO> getMovieTrailers(Long movieId, Pageable pageable) {
+        Page<MovieTrailer> trailers = movieTrailerRepository.findByMovieIdOrderByPublishedAtDesc(movieId, pageable);
+        return trailers.map(MovieTrailerDTO::fromEntity);
     }
 }

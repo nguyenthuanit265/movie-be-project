@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -66,8 +67,28 @@ public class Movie extends BaseEntity {
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<MovieCategory> categories;
 
+    @Column(name = "poster_url")
+    private String posterUrl;
+
+    @Column(name = "backdrop_url")
+    private String backdropUrl;
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MovieTrailer> movieTrailers = new HashSet<>();
+
     public boolean isInCategory(CategoryType category) {
         return categories.stream()
                 .anyMatch(mc -> Objects.equals(mc.getCategory(), category.name()));
+    }
+
+    // Helper methods to manage the relationship
+    public void addTrailer(MovieTrailer trailer) {
+        movieTrailers.add(trailer);
+        trailer.setMovie(this);
+    }
+
+    public void removeTrailer(MovieTrailer trailer) {
+        movieTrailers.remove(trailer);
+        trailer.setMovie(null);
     }
 }

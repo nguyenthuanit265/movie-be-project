@@ -4,8 +4,11 @@ import com.be.model.dto.tmdb.*;
 import com.be.model.entity.CategoryType;
 import com.be.model.entity.Movie;
 import com.be.model.entity.MovieCategory;
+import com.be.model.entity.MovieTrailer;
 import com.be.repository.MovieRepository;
+import com.be.repository.MovieTrailerRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -19,8 +22,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -30,12 +33,40 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class TMDBService {
-    private final String BASE_URL = "";
-    private final String BEARER_TOKEN = "";
+
     private final RestTemplate restTemplate;
     private final MovieRepository movieRepository;
+    private final MovieTrailerRepository movieTrailerRepository;
 
-    public TMDBService(RestTemplate restTemplate, MovieRepository movieRepository) {
+    // Image sizes available from TMDB
+    public static class ImageSize {
+        // Poster sizes
+        public static final String POSTER_SMALL = "w185";
+        public static final String POSTER_MEDIUM = "w342";
+        public static final String POSTER_LARGE = "w500";
+        public static final String POSTER_ORIGINAL = "original";
+
+        // Backdrop sizes
+        public static final String BACKDROP_SMALL = "w300";
+        public static final String BACKDROP_MEDIUM = "w780";
+        public static final String BACKDROP_LARGE = "w1280";
+        public static final String BACKDROP_ORIGINAL = "original";
+    }
+
+    public String getFullPosterPath(String posterPath) {
+        if (posterPath == null) return null;
+        return BASE_IMAGE_URL + ImageSize.POSTER_ORIGINAL + posterPath;
+    }
+
+    public String getFullBackdropPath(String backdropPath) {
+        if (backdropPath == null) return null;
+        return BASE_IMAGE_URL + ImageSize.BACKDROP_ORIGINAL + backdropPath;
+    }
+
+
+    public TMDBService(RestTemplate restTemplate, MovieRepository movieRepository,
+                       MovieTrailerRepository movieTrailerRepository) {
+        this.movieTrailerRepository = movieTrailerRepository;
         // Configure RestTemplate with headers
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("accept", "application/json");
@@ -150,8 +181,12 @@ public class TMDBService {
 
     // Get popular movies
     public TMDBMovieResponse getPopularMovies(int page) {
-        String url = String.format("%s/movie/popular?page=%d",
-                BASE_URL, page);
+        String url = String.format("%s/movie/popular?language=en-US&page=%d", BASE_URL, page);
+
+        log.info("TMDB API Request - Get Popular Movies: {}", url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        log.info("TMDB API Response - Get Popular Movies: {}", response.getBody());
+
         return restTemplate.getForObject(url, TMDBMovieResponse.class);
     }
 
@@ -210,17 +245,114 @@ public class TMDBService {
         }
     }
 
-    public void syncPopularMovies() {
+    @Async
+    public CompletableFuture<String> syncPopularMovies() {
         try {
-            log.info("Starting sync of popular movies");
-            TMDBMovieResponse response = getPopularMovies(1);
+            log.info("Started syncing popular movies");
+            TMDBMovieResponse response = getPopularMovies(1);  // Get first page
 
-            for (TMDBMovieDTO item : response.getResults()) {
-//                saveOrUpdateMovie(item);
+            for (TMDBMovieDTO movieDTO : response.getResults()) {
+                Movie movie = movieRepository.findByTmdbId(movieDTO.getId())
+                        .orElse(new Movie());
+
+                updateMovieFromTMDB(movie, movieDTO);
+                MovieCategory category;
+                if (CollectionUtils.isEmpty(movie.getCategories())) {
+                    category = new MovieCategory();
+                } else {
+                    category = movie.getCategories().stream()
+                            .filter(mc -> Objects.equals(mc.getCategory(), CategoryType.POPULAR.name()))
+                            .findFirst()
+                            .orElse(new MovieCategory());
+                }
+
+                category.setMovie(movie);
+                category.setCategory(CategoryType.POPULAR.name());
+                category.setCreatedAt(ZonedDateTime.now());
+                category.setUpdatedAt(ZonedDateTime.now());
+
+                if (CollectionUtils.isEmpty(movie.getCategories())) {
+                    movie.setCategories(new HashSet<>(List.of(category)));
+                } else {
+                    movie.getCategories().add(category);
+                }
+
+                movieRepository.save(movie);
             }
-            log.info("Completed sync of {} popular movies", response.getResults().size());
+
+            log.info("Completed syncing popular movies");
+            return CompletableFuture.completedFuture("Popular movies sync completed successfully");
         } catch (Exception e) {
             log.error("Error syncing popular movies: ", e);
+            return CompletableFuture.completedFuture("Error syncing popular movies: " + e.getMessage());
+        }
+    }
+
+    // Get movie videos (trailers)
+    public TMDBVideoResponse getMovieVideos(Long movieId) {
+        String url = String.format("%s/movie/%d/videos?language=en-US", BASE_URL, movieId);
+
+        log.info("TMDB API Request - Get Movie Videos: {}", url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        log.info("TMDB API Response - Get Movie Videos: {}", response.getBody());
+
+        return restTemplate.getForObject(url, TMDBVideoResponse.class);
+    }
+
+    // Get upcoming movies to find latest trailers
+    public TMDBMovieResponse getUpcomingMovies() {
+        String url = String.format("%s/movie/upcoming?language=en-US", BASE_URL);
+        return restTemplate.getForObject(url, TMDBMovieResponse.class);
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<String> syncLatestTrailers() {
+        try {
+            log.info("Started syncing latest trailers");
+            TMDBMovieResponse upcomingMovies = getUpcomingMovies();
+
+            for (TMDBMovieDTO movieDTO : upcomingMovies.getResults()) {
+                // Get movie trailers
+                TMDBVideoResponse videos = getMovieVideos(movieDTO.getId());
+
+                // Filter for official trailers only
+                List<TMDBVideoDTO> trailers = videos.getResults().stream()
+                        .filter(v -> "Trailer".equals(v.getType()) && v.isOfficial())
+                        .collect(Collectors.toList());
+
+                if (!trailers.isEmpty()) {
+                    // Save or update movie first
+                    Movie movie = movieRepository.findByTmdbId(movieDTO.getId())
+                            .orElse(new Movie());
+
+                    updateMovieFromTMDB(movie, movieDTO);
+                    movie = movieRepository.save(movie);  // Save movie first and get the managed entity
+
+                    // Save trailers
+                    for (TMDBVideoDTO trailer : trailers) {
+                        MovieTrailer movieTrailer = MovieTrailer.builder()
+                                .movie(movie)  // Use the managed movie entity
+                                .key(trailer.getKey())
+                                .name(trailer.getName())
+                                .site(trailer.getSite())
+                                .type(trailer.getType())
+                                .official(trailer.isOfficial())
+                                .publishedAt(Instant.parse(trailer.getPublishedAt())
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDateTime())
+                                .build();
+
+                        movieTrailerRepository.save(movieTrailer);
+                    }
+                }
+            }
+
+            log.info("Completed syncing latest trailers");
+            return CompletableFuture.completedFuture("Latest trailers sync completed successfully");
+        } catch (Exception e) {
+            log.error("Error syncing latest trailers: ", e);
+            return CompletableFuture.completedFuture("Error syncing latest trailers: " + e.getMessage());
         }
     }
 
@@ -243,6 +375,9 @@ public class TMDBService {
 
             movie.setPosterPath(item.getPosterPath());
             movie.setBackdropPath(item.getBackdropPath());
+
+            movie.setPosterUrl(getFullPosterPath(item.getPosterPath()));
+            movie.setBackdropUrl(getFullBackdropPath(item.getBackdropPath()));
 
             movie.setVoteAverage(item.getVoteAverage());
             movie.setVoteCount(item.getVoteCount());
@@ -289,6 +424,21 @@ public class TMDBService {
     @Scheduled(cron = "0 0 1 * * *") // Once a day at 1 AM
     public void scheduledPopularSync() {
         syncPopularMovies();
+    }
+
+    private void updateMovieFromTMDB(Movie movie, TMDBMovieDTO tmdbMovie) {
+        movie.setTmdbId(tmdbMovie.getId());
+        movie.setTitle(tmdbMovie.getTitle());
+        movie.setOriginalTitle(tmdbMovie.getOriginalTitle());
+        movie.setOverview(tmdbMovie.getOverview());
+        movie.setReleaseDate(LocalDate.parse(tmdbMovie.getReleaseDate()));
+        movie.setPosterPath(tmdbMovie.getPosterPath());
+        movie.setBackdropPath(tmdbMovie.getBackdropPath());
+        movie.setPopularity(tmdbMovie.getPopularity());
+        movie.setVoteAverage(tmdbMovie.getVoteAverage());
+        movie.setVoteCount(tmdbMovie.getVoteCount());
+        movie.setPosterUrl(getFullPosterPath(tmdbMovie.getPosterPath()));
+        movie.setBackdropUrl(getFullBackdropPath(tmdbMovie.getBackdropPath()));
     }
 
 }

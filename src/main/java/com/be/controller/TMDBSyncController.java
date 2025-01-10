@@ -37,9 +37,29 @@ public class TMDBSyncController {
         ));
     }
 
-//    @PostMapping("/popular")
-//    public ResponseEntity<?> syncPopularMovies() {
-//        tmdbService.syncPopularMovies();
-//        return ResponseEntity.ok("Started syncing popular movies");
-//    }
+    @PostMapping("/popular")
+    public ResponseEntity<AppResponse<String>> syncPopularMovies() {
+        tmdbService.syncPopularMovies(); // This will run in background
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Popular movies sync started in background",
+                HttpStatus.OK.value(),
+                "Sync process started"
+        ));
+    }
+
+    @PostMapping("/trailers")
+    public ResponseEntity<AppResponse<String>> syncLatestTrailers() {
+        tmdbService.syncLatestTrailers();
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Latest trailers sync started in background",
+                HttpStatus.OK.value(),
+                "Sync process started"
+        ));
+    }
 }
