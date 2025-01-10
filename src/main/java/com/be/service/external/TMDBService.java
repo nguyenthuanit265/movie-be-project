@@ -10,6 +10,7 @@ import com.be.repository.MovieTrailerRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,9 +25,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -208,7 +207,62 @@ public class TMDBService {
     }
 
 
-    /*SYNC*/
+    // Get Movie Credits (Cast & Crew)
+    public TMDBCreditsResponse getMovieCredits(Long movieId) {
+        String url = String.format("%s/movie/%d/credits?language=en-US", BASE_URL, movieId);
+
+        log.info("TMDB API Request - Get Movie Credits: {}", url);
+        return restTemplate.getForObject(url, TMDBCreditsResponse.class);
+    }
+
+    // Get Movie Reviews
+    public TMDBReviewResponse getMovieReviews(Long movieId, int page) {
+        String url = String.format("%s/movie/%d/reviews?language=en-US&page=%d",
+                BASE_URL, movieId, page);
+
+        log.info("TMDB API Request - Get Movie Reviews: {}", url);
+        return restTemplate.getForObject(url, TMDBReviewResponse.class);
+    }
+
+    // Rate Movie
+    public void rateMovie(Long movieId, double rating) {
+        String url = String.format("%s/movie/%d/rating", BASE_URL, movieId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("value", rating);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body);
+        restTemplate.postForEntity(url, request, Void.class);
+    }
+
+    // Add to Favorites
+    public void addToFavorites(Long movieId, String accountId, boolean favorite) {
+        String url = String.format("%s/account/%s/favorite", BASE_URL, accountId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("media_type", "movie");
+        body.put("media_id", movieId);
+        body.put("favorite", favorite);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body);
+        restTemplate.postForEntity(url, request, Void.class);
+    }
+
+    // Add to Watchlist
+    public void addToWatchlist(Long movieId, String accountId, boolean watchlist) {
+        String url = String.format("%s/account/%s/watchlist", BASE_URL, accountId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("media_type", "movie");
+        body.put("media_id", movieId);
+        body.put("watchlist", watchlist);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body);
+        restTemplate.postForEntity(url, request, Void.class);
+    }
+
+
+    /*===================================================SYNC===================================================SYNC*/
     @Async
     public CompletableFuture<String> syncTrendingMovies() {
         try {
