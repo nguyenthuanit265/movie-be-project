@@ -4,8 +4,11 @@ package com.be.controller;
 import com.be.model.base.AppResponse;
 import com.be.model.base.PageResponse;
 import com.be.model.dto.MovieDTO;
+import com.be.model.dto.MovieRatingDTO;
 import com.be.model.dto.MovieTrailerDTO;
+import com.be.model.dto.RatingRequest;
 import com.be.model.entity.CategoryType;
+import com.be.model.entity.MovieRating;
 import com.be.service.MovieService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,21 @@ public class MovieController {
         this.movieService = movieService;
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<AppResponse<Void>> handleException(Exception e) {
+        log.error("Error in movie controller: ", e);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(AppResponse.buildResponse(
+                        e.getMessage(),
+                        request.getRequestURI(),
+                        "Internal Server Error",
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        null
+                ));
+    }
+
+    //    Trending movies by today
     @GetMapping("/trending/day")
     public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMoviesTrendingByDay(
             @RequestParam(defaultValue = "0") int page,
@@ -44,6 +62,7 @@ public class MovieController {
         ));
     }
 
+    //    Trending movies by this week
     @GetMapping("/trending/week")
     public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMoviesTrendingByWeek(
             @RequestParam(defaultValue = "0") int page,
@@ -103,20 +122,7 @@ public class MovieController {
         ));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<AppResponse<Void>> handleException(Exception e) {
-        log.error("Error in movie controller: ", e);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(AppResponse.buildResponse(
-                        e.getMessage(),
-                        request.getRequestURI(),
-                        "Internal Server Error",
-                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        null
-                ));
-    }
-
+    //    Popular movies
     @GetMapping("/popular")
     public ResponseEntity<AppResponse<PageResponse<MovieDTO>>> getMoviesPopular(
             @RequestParam(defaultValue = "0") int page,
@@ -133,4 +139,36 @@ public class MovieController {
                 pageResponse
         ));
     }
+
+    // Rating
+    @PostMapping("/{movieId}/rating")
+    public ResponseEntity<AppResponse<MovieRatingDTO>> rateMovie(
+            @PathVariable Long movieId,
+            @RequestBody RatingRequest ratingRequest) {
+        MovieRating rating = movieService.rateMovie(movieId, ratingRequest.getUserId(), ratingRequest.getRating());
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Rating added successfully",
+                HttpStatus.OK.value(),
+                MovieRatingDTO.fromEntity(rating)
+        ));
+    }
+
+    //    Mark as favorite
+    @PostMapping("/{movieId}/favorite")
+    public ResponseEntity<AppResponse<Void>> toggleFavorite(
+            @PathVariable Long movieId,
+            @RequestParam Long userId) {
+        movieService.toggleFavorite(movieId, userId);
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Favorite toggled successfully",
+                HttpStatus.OK.value(),
+                null
+        ));
+    }
+
+    // TODO Latest trailers, Quick info, Add to watch list, Casts, Reviews
 }

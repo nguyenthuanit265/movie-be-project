@@ -42,7 +42,7 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user")
     private Set<Review> reviews;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "watchlists",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -50,7 +50,7 @@ public class User extends BaseEntity {
     )
     private Set<Movie> watchlist;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "favorites",
             joinColumns = @JoinColumn(name = "user_id"),

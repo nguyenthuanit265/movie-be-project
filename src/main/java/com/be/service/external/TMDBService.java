@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class TMDBService {
+
     private final RestTemplate restTemplate;
     private final MovieRepository movieRepository;
     private final MovieTrailerRepository movieTrailerRepository;
@@ -117,7 +118,7 @@ public class TMDBService {
         String url = String.format("%s/search/movie?query=%s&include_adult=false&language=en-US&page=%d",
                 BASE_URL, query, page);
 
-        log.info("searchMovies - TMDB API Request - Search Movies: {}", url);
+        log.info("searchMovies - TMDB API Request: {}", url);
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
         log.info("searchMovies - TMDB API Response: {}", response.getBody());
 
