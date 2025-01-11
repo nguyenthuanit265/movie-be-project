@@ -193,3 +193,18 @@ CREATE TABLE movie_ratings
 CREATE INDEX idx_movie_ratings_movie ON movie_ratings (movie_id);
 CREATE INDEX idx_movie_ratings_user ON movie_ratings (user_id);
 CREATE INDEX idx_movie_ratings_value ON movie_ratings (value);
+
+
+CREATE TABLE password_reset_tokens
+(
+    id          BIGSERIAL PRIMARY KEY,
+    token       VARCHAR(255)             NOT NULL,
+    user_id     BIGINT                   NOT NULL REFERENCES users (id),
+    expiry_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_password_reset_token UNIQUE (token)
+);
+
+CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);
+CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens (token);
