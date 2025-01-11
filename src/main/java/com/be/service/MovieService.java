@@ -1,7 +1,9 @@
 package com.be.service;
 
+import com.be.model.dto.CastDTO;
 import com.be.model.dto.MovieDTO;
 import com.be.model.dto.MovieTrailerDTO;
+import com.be.model.dto.ReviewDTO;
 import com.be.model.entity.Movie;
 import com.be.model.entity.MovieRating;
 import com.be.model.entity.Review;
@@ -30,5 +32,15 @@ public interface MovieService {
 
     Review addReview(Long movieId, Long userId, String content);
 
-    Page<Review> getMovieReviews(Long movieId, Pageable pageable);
+    Page<ReviewDTO> getMovieReviews(Long movieId, Pageable pageable);
+
+    Page<MovieDTO> getRecommendationsByUserHistory(Long userId, Pageable pageable);
+
+    Page<MovieDTO> getSimilarMovies(Long movieId, Pageable pageable);
+
+    Page<CastDTO> getMovieCast(Long movieId, Pageable pageable);
+
+    void removeFromWatchlist(Long movieId, Long userId);
+
+    void addToWatchlist(Long movieId, Long userId);
 }

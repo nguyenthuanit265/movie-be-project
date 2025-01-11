@@ -1,5 +1,6 @@
 package com.be.model.dto;
 
+import com.be.model.entity.Movie;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,7 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -52,4 +55,28 @@ public class MovieDTO {
 
     @JsonProperty("backdrop_url")
     private String backdropUrl;
+
+    public static MovieDTO fromEntity(Movie movie) {
+        return MovieDTO.builder()
+                .id(movie.getId())
+                .tmdbId(movie.getTmdbId())
+                .title(movie.getTitle())
+                .originalTitle(movie.getOriginalTitle())
+                .overview(movie.getOverview())
+                .releaseDate(movie.getReleaseDate())
+                .runtime(movie.getRuntime())
+                .posterPath(movie.getPosterPath())
+                .backdropPath(movie.getBackdropPath())
+                .popularity(movie.getPopularity())
+                .voteAverage(movie.getVoteAverage())
+                .voteCount(movie.getVoteCount())
+                .genres(movie.getGenres() != null ?
+                        movie.getGenres().stream()
+                                .map(GenreDTO::fromEntity)
+                                .collect(Collectors.toSet()) :
+                        new HashSet<>())
+                .posterUrl(movie.getPosterUrl())
+                .backdropUrl(movie.getBackdropUrl())
+                .build();
+    }
 }

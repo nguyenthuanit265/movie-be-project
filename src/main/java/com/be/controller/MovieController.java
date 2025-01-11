@@ -3,10 +3,7 @@ package com.be.controller;
 
 import com.be.model.base.AppResponse;
 import com.be.model.base.PageResponse;
-import com.be.model.dto.MovieDTO;
-import com.be.model.dto.MovieRatingDTO;
-import com.be.model.dto.MovieTrailerDTO;
-import com.be.model.dto.RatingRequest;
+import com.be.model.dto.*;
 import com.be.model.entity.CategoryType;
 import com.be.model.entity.MovieRating;
 import com.be.service.MovieService;
@@ -170,5 +167,89 @@ public class MovieController {
         ));
     }
 
+    // Watchlist endpoints
+    @PostMapping("/{movieId}/watchlist")
+    public ResponseEntity<AppResponse<Void>> addToWatchlist(
+            @PathVariable Long movieId,
+            @RequestParam Long userId) {
+        movieService.addToWatchlist(movieId, userId);
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Added to watchlist successfully",
+                HttpStatus.OK.value(),
+                null
+        ));
+    }
+
+    @DeleteMapping("/{movieId}/watchlist")
+    public ResponseEntity<AppResponse<Void>> removeFromWatchlist(
+            @PathVariable Long movieId,
+            @RequestParam Long userId) {
+        movieService.removeFromWatchlist(movieId, userId);
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Removed from watchlist successfully",
+                HttpStatus.OK.value(),
+                null
+        ));
+    }
+
+    // Cast endpoint
+    @GetMapping("/{movieId}/cast")
+    public ResponseEntity<AppResponse<Page<CastDTO>>> getMovieCast(
+            @PathVariable Long movieId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<CastDTO> cast = movieService.getMovieCast(movieId, PageRequest.of(page, size));
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Cast retrieved successfully",
+                HttpStatus.OK.value(),
+                cast
+        ));
+    }
+
+    // Reviews endpoints
+    @GetMapping("/{movieId}/reviews")
+    public ResponseEntity<AppResponse<Page<ReviewDTO>>> getMovieReviews(
+            @PathVariable Long movieId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<ReviewDTO> reviews = movieService.getMovieReviews(movieId, PageRequest.of(page, size));
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Reviews retrieved successfully",
+                HttpStatus.OK.value(),
+                reviews
+        ));
+    }
+
+    // Recommendations endpoints
+    @GetMapping("/{movieId}/recommendations")
+    public ResponseEntity<AppResponse<Page<MovieDTO>>> getRecommendations(
+            @PathVariable Long movieId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<MovieDTO> recommendations;
+        if (userId != null) {
+            recommendations = movieService.getRecommendationsByUserHistory(userId, PageRequest.of(page, size));
+        } else {
+            recommendations = movieService.getSimilarMovies(movieId, PageRequest.of(page, size));
+        }
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Recommendations retrieved successfully",
+                HttpStatus.OK.value(),
+                recommendations
+        ));
+    }
+
     // TODO Latest trailers, Quick info, Add to watch list, Casts, Reviews
+
 }

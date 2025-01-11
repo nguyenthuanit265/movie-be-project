@@ -1,9 +1,7 @@
 package com.be.service.impl;
 
 import com.be.appexception.ResourceNotFoundException;
-import com.be.model.dto.GenreDTO;
-import com.be.model.dto.MovieDTO;
-import com.be.model.dto.MovieTrailerDTO;
+import com.be.model.dto.*;
 import com.be.model.entity.*;
 import com.be.repository.*;
 import com.be.service.MovieService;
@@ -27,17 +25,20 @@ public class MovieServiceImpl implements MovieService {
     private final UserRepository userRepository;
     private final MovieRatingRepository ratingRepository;
     private final ReviewRepository reviewRepository;
+    private final MovieCastRepository movieCastRepository;
 
     public MovieServiceImpl(MovieRepository movieRepository,
                             MovieTrailerRepository movieTrailerRepository,
                             UserRepository userRepository,
                             MovieRatingRepository ratingRepository,
-                            ReviewRepository reviewRepository) {
+                            ReviewRepository reviewRepository,
+                            MovieCastRepository movieCastRepository) {
         this.movieRepository = movieRepository;
         this.movieTrailerRepository = movieTrailerRepository;
         this.userRepository = userRepository;
         this.ratingRepository = ratingRepository;
         this.reviewRepository = reviewRepository;
+        this.movieCastRepository = movieCastRepository;
     }
 
     public MovieDTO toMovieDTO(Movie movie) {
@@ -79,6 +80,7 @@ public class MovieServiceImpl implements MovieService {
         return moviePage.map(this::toMovieDTO);
     }
 
+    @Transactional(readOnly = true)
     public Page<Movie> searchMovies(String query, int page) {
         return movieRepository.search(
                 query,
@@ -97,6 +99,7 @@ public class MovieServiceImpl implements MovieService {
         return toMovieDTOPage(movieRepository.findMovieByCategory(category, pageable));
     }
 
+    @Transactional(readOnly = true)
     public List<MovieTrailerDTO> getMovieTrailers(Long movieId) {
         List<MovieTrailer> trailers = movieTrailerRepository.findByMovieIdOrderByPublishedAtDesc(movieId);
         return trailers.stream()
@@ -104,6 +107,7 @@ public class MovieServiceImpl implements MovieService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Page<MovieTrailerDTO> getMovieTrailers(Long movieId, Pageable pageable) {
         Page<MovieTrailer> trailers = movieTrailerRepository.findByMovieIdOrderByPublishedAtDesc(movieId, pageable);
         return trailers.map(MovieTrailerDTO::fromEntity);
@@ -177,10 +181,70 @@ public class MovieServiceImpl implements MovieService {
         return reviewRepository.save(review);
     }
 
-    // Get movie reviews
-    public Page<Review> getMovieReviews(Long movieId, Pageable pageable) {
+    // Watchlist
+    @Transactional(readOnly = true)
+    public void addToWatchlist(Long movieId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found", "", "", ""));
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
-        return reviewRepository.findByMovieOrderByCreatedAtDesc(movie, pageable);
+
+        user.getWatchlist().add(movie);
+        userRepository.save(user);
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void removeFromWatchlist(Long movieId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found", "", "", ""));
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+
+        user.getWatchlist().remove(movie);
+        userRepository.save(user);
+    }
+
+    // Cast
+    @Transactional(readOnly = true)
+    public Page<CastDTO> getMovieCast(Long movieId, Pageable pageable) {
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+        return movieCastRepository.findByMovie(movie, pageable)
+                .map(CastDTO::fromEntity);
+    }
+
+    // Reviews
+    @Transactional(readOnly = true)
+    public Page<ReviewDTO> getMovieReviews(Long movieId, Pageable pageable) {
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+        return reviewRepository.findByMovieOrderByCreatedAtDesc(movie, pageable)
+                .map(ReviewDTO::fromEntity);
+    }
+
+    // Recommendations based on user history
+    @Transactional(readOnly = true)
+    public Page<MovieDTO> getRecommendationsByUserHistory(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found", "", "", ""));
+
+        // Get user's favorite genres based on watched movies
+        List<Genre> favoriteGenres = movieRepository.findUserFavoriteGenres(userId);
+
+        return movieRepository.findByGenresInOrderByPopularityDesc(favoriteGenres, pageable)
+                .map(MovieDTO::fromEntity);
+    }
+
+    // Recommendations based on current movie
+    @Transactional(readOnly = true)
+    public Page<MovieDTO> getSimilarMovies(Long movieId, Pageable pageable) {
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+
+        // Get similar movies using genres and vector similarity
+        return movieRepository.findSimilarMovies(movie.getId(), pageable)
+                .map(MovieDTO::fromEntity);
+    }
+
+
 }
