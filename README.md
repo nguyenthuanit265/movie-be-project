@@ -1,104 +1,180 @@
-Certainly! Here’s a professional README for the Spring Security project:
+Ah, I see! The repository [nguyenthuanit265/movie-be-project](https://github.com/nguyenthuanit265/movie-be-project) uses **Java Spring Boot** for the backend. Let me provide a proper `README.md` template tailored for a Spring Boot project.
 
 ---
 
-# Spring Security Project
+# Movie BE Project (Spring Boot)
 
-This repository contains a Spring Security project designed to demonstrate secure authentication and authorization practices in a Spring Boot application. The project is structured to follow best practices in Java development and utilizes Maven for dependency management.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)  
+![GitHub stars](https://img.shields.io/github/stars/nguyenthuanit265/movie-be-project?style=social)  
+![GitHub forks](https://img.shields.io/github/forks/nguyenthuanit265/movie-be-project?style=social)
+
+The backend component of the Movie Project, built with **Java Spring Boot**. This project provides RESTful APIs to manage movie data, integrate with external services like The Movie Database (TMDb), and handle server-side logic for the movie application.
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Technologies Used](#technologies-used)
+- [Installation](#installation)
+- [API Endpoints](#api-endpoints)
+- [Configuration](#configuration)
+- [Database](#database)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+---
 
 ## Features
 
-- **User Authentication**: Secure login using Spring Security.
-- **Role-Based Authorization**: Access control based on user roles.
-- **JWT Integration**: Secure token-based authentication.
-- **Database Integration**: User data management with JPA and Hibernate.
-- **RESTful API**: Secure endpoints with role-based access.
+- **RESTful API**: Provides endpoints for fetching movie data, searching, and more.
+- **Integration with TMDb**: Fetches movie data from The Movie Database (TMDb) API.
+- **Authentication**: Supports user authentication and authorization (if applicable).
+- **Database**: Stores user data, preferences, or other relevant information (if applicable).
+- **Scalable Architecture**: Built with Spring Boot for scalability and performance.
 
-## Prerequisites
+---
 
-- **Java 11+**
-- **Maven 3.6+**
-- **Spring Boot 2.5+**
-- **MySQL/PostgreSQL** (optional for database integration)
+## Technologies Used
+
+- **Backend**:
+   - [Java](https://www.java.com/)
+   - [Spring Boot](https://spring.io/projects/spring-boot)
+   - [Spring Data JPA](https://spring.io/projects/spring-data-jpa) (if applicable)
+   - [Spring Security](https://spring.io/projects/spring-security) (if applicable)
+- **Database**:
+   - [MySQL](https://www.mysql.com/) or [PostgreSQL](https://www.postgresql.org/) (or any other database you used)
+- **API Integration**:
+   - [The Movie Database (TMDb) API](https://www.themoviedb.org/documentation/api)
+- **Tools**:
+   - [Maven](https://maven.apache.org/) for dependency management
+   - [Postman](https://www.postman.com/) for API testing
+   - [Git](https://git-scm.com/) for version control
+
+---
 
 ## Installation
 
-1. Clone the repository:
+To set up this project locally, follow these steps:
+
+1. **Clone the repository**:
    ```bash
-   git clone https://github.com/nguyenthuanit265/spring-security-project.git
+   git clone https://github.com/nguyenthuanit265/movie-be-project.git
+   cd movie-be-project
    ```
-2. Navigate to the project directory:
-   ```bash
-   cd spring-security-project
-   ```
-3. Build the project:
+
+2. **Configure the database**:
+   - Set up a MySQL or PostgreSQL database.
+   - Update the `application.properties` file with your database credentials:
+     ```properties
+     spring.datasource.url=jdbc:mysql://localhost:3306/movie_db
+     spring.datasource.username=your_username
+     spring.datasource.password=your_password
+     spring.jpa.hibernate.ddl-auto=update
+     ```
+
+3. **Set up environment variables**:
+   - Add your TMDb API key to the `application.properties` file:
+     ```properties
+     tmdb.api.key=your_tmdb_api_key
+     ```
+
+4. **Build and run the project**:
    ```bash
    mvn clean install
-   ```
-4. Run the application:
-   ```bash
    mvn spring-boot:run
    ```
 
+5. **Test the API**:
+   Use tools like Postman or curl to test the API endpoints.
+
+---
+
+## API Endpoints
+
+Here are the main API endpoints provided by this backend:
+
+### Movies
+- **GET /api/movies**: Fetch a list of movies.
+- **GET /api/movies/{id}**: Fetch details of a specific movie by ID.
+- **GET /api/movies/search?query=**: Search for movies by title or keyword.
+
+### Users (if applicable)
+- **POST /api/users/register**: Register a new user.
+- **POST /api/users/login**: Authenticate a user and return a JWT token.
+- **GET /api/users/profile**: Fetch user profile (protected route).
+
+---
+
 ## Configuration
 
-Modify the `application.properties` file in the `src/main/resources` directory to configure database connections, security settings, and other application parameters.
+The following configurations are required in the `application.properties` file:
 
-## Usage
+- **Database**:
+  ```properties
+  spring.datasource.url=jdbc:mysql://localhost:3306/movie_db
+  spring.datasource.username=your_username
+  spring.datasource.password=your_password
+  spring.jpa.hibernate.ddl-auto=update
+  ```
 
-Access the application via `http://localhost:8080`. Use the provided API endpoints for authentication and user management.
+- **TMDb API**:
+  ```properties
+  tmdb.api.key=your_tmdb_api_key
+  ```
 
-# Mô tả chi tiết dự án Spring Security API Demo
+- **Server Port** (optional):
+  ```properties
+  server.port=8080
+  ```
 
-## 1. Tổng quan
+---
 
-Dự án này là một demo nhỏ về việc triển khai bảo mật cho REST API sử dụng Spring Security. Nó minh họa cách xác thực người dùng, quản lý phiên đăng nhập bằng JWT (JSON Web Tokens), và kiểm soát quyền truy cập vào các tài nguyên dựa trên vai trò của người dùng.
+## Database
 
-## 2. Công nghệ sử dụng
+If your project uses a database, ensure the following:
+- A database (e.g., MySQL, PostgreSQL) is set up and running.
+- The `application.properties` file is configured with the correct database credentials.
+- Tables are automatically created using Hibernate's `ddl-auto` property.
 
-- Spring Boot
-- Spring Security
-- JSON Web Tokens (JWT)
-- RESTful API
-- Java
+---
 
-## 3. Cấu trúc API
+## Contributing
 
-### 3.1 Endpoints công khai
+Contributions are welcome! If you'd like to contribute to this project, please follow these steps:
 
-- `GET /api/v1/resources/public`: Truy cập tài nguyên công khai
-- `GET /api/v1/public`: Một endpoint công khai khác
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/YourFeatureName`).
+3. Commit your changes (`git commit -m 'Add some feature'`).
+4. Push to the branch (`git push origin feature/YourFeatureName`).
+5. Open a pull request.
 
-### 3.2 Endpoints xác thực
+Please ensure your code follows the project's coding standards and includes appropriate tests.
 
-- `POST /api/v1/auth/sign-up`: Đăng ký người dùng mới
-- `POST /api/v1/auth/login`: Đăng nhập và nhận token JWT
+---
 
-### 3.3 Endpoints người dùng
+## License
 
-- `GET /api/v1/users/content`: Lấy nội dung dành cho người dùng đã xác thực
-- `GET /api/v1/users/{id}`: Lấy thông tin profile của người dùng theo ID
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-### 3.4 Endpoints admin
+---
 
-- `GET /api/v1/admins/profiles`: Lấy thông tin profile của admin
-- `GET /api/v1/admins/board`: Truy cập bảng điều khiển admin
+## Acknowledgements
 
-## 4. Luồng xác thực và ủy quyền
+- [The Movie Database (TMDb)](https://www.themoviedb.org/) for providing the API.
+- [Spring Boot](https://spring.io/projects/spring-boot) for the backend framework.
+- [MySQL](https://www.mysql.com/) or [PostgreSQL](https://www.postgresql.org/) for the database (if applicable).
 
-1. Người dùng đăng ký tài khoản thông qua endpoint đăng ký.
-2. Người dùng đăng nhập và nhận được JWT.
-3. Các yêu cầu tiếp theo đến các endpoint được bảo vệ phải bao gồm JWT trong header "Authorization".
-4. Server xác thực JWT và kiểm tra quyền của người dùng trước khi cho phép truy cập vào tài nguyên.
+---
 
-## 5. Bảo mật
+## Contact
 
-- Sử dụng JWT để quản lý phiên đăng nhập, tránh lưu trữ thông tin phiên trên server.
-- Phân quyền dựa trên vai trò (ROLE_USER, ROLE_ADMIN).
-- Mã hóa mật khẩu trước khi lưu vào cơ sở dữ liệu.
-- Sử dụng HTTPS để bảo vệ dữ liệu trong quá trình truyền tải (được giả định).
+If you have any questions or suggestions, feel free to reach out:
 
-## 6. Xử lý lỗi
+- **Author**: Nguyen Thuan
+- **GitHub**: [nguyenthuanit265](https://github.com/nguyenthuanit265)
 
-- Trả về mã lỗi HTTP phù hợp (ví dụ: 403 Forbidden) khi truy cập không được phép.
-- Cung cấp thông báo lỗi chi tiết trong response body.
+---
+
+Feel free to adjust this template to better fit your Spring Boot project. Good luck with your Movie BE Project! 🚀
