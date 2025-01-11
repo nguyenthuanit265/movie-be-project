@@ -43,4 +43,6 @@ public interface MovieService {
     void removeFromWatchlist(Long movieId, Long userId);
 
     void addToWatchlist(Long movieId, Long userId);
+
+    Page<MovieTrailerDTO> getLatestTrailers(Pageable pageable);
 }

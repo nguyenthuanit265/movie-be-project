@@ -250,6 +250,21 @@ public class MovieController {
         ));
     }
 
-    // TODO Latest trailers, Quick info, Add to watch list, Casts, Reviews
+    @GetMapping("/trailers/latest")
+    public ResponseEntity<AppResponse<Page<MovieTrailerDTO>>> getLatestTrailers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
+        Page<MovieTrailerDTO> trailers = movieService.getLatestTrailers(PageRequest.of(page, size));
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Latest trailers retrieved successfully",
+                HttpStatus.OK.value(),
+                trailers
+        ));
+    }
+
+    // TODO  Quick info, Add to watch list, Casts, Reviews
 }

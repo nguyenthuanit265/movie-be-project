@@ -246,5 +246,9 @@ public class MovieServiceImpl implements MovieService {
                 .map(MovieDTO::fromEntity);
     }
 
-
+    public Page<MovieTrailerDTO> getLatestTrailers(Pageable pageable) {
+        return movieTrailerRepository
+                .findAllByOrderByPublishedAtDesc(pageable)
+                .map(MovieTrailerDTO::fromEntity);
+    }
 }

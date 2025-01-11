@@ -114,6 +114,7 @@ public class SpringSecurityConfig {
                         .requestMatchers("/api/movies/*/trailers").permitAll()
                         .requestMatchers("/api/movies/*/rating").permitAll()
                         .requestMatchers("/api/movies/*/favorite").permitAll()
+                        .requestMatchers("/api/movies/trailers/latest").permitAll()
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()
