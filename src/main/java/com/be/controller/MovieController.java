@@ -1,6 +1,7 @@
 package com.be.controller;
 
 
+import com.be.utils.SecurityUtils;
 import com.be.model.base.AppResponse;
 import com.be.model.base.PageResponse;
 import com.be.model.dto.*;
@@ -142,7 +143,13 @@ public class MovieController {
     public ResponseEntity<AppResponse<MovieRatingDTO>> rateMovie(
             @PathVariable Long movieId,
             @RequestBody RatingRequest ratingRequest) {
-        MovieRating rating = movieService.rateMovie(movieId, ratingRequest.getUserId(), ratingRequest.getRating());
+
+        MovieRating rating = MovieRating.builder().build();
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("rateMovie userId = {}, movieId = {}, rating = {}", userId, movieId, ratingRequest.getRating());
+        if (userId != null) {
+            rating = movieService.rateMovie(movieId, ratingRequest.getUserId(), ratingRequest.getRating());
+        }
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),
@@ -155,9 +162,13 @@ public class MovieController {
     //    Mark as favorite
     @PostMapping("/{movieId}/favorite")
     public ResponseEntity<AppResponse<Void>> toggleFavorite(
-            @PathVariable Long movieId,
-            @RequestParam Long userId) {
-        movieService.toggleFavorite(movieId, userId);
+            @PathVariable Long movieId) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("toggleFavorite userId = {}, movieId = {}", userId, movieId);
+        if (userId != null) {
+            movieService.toggleFavorite(movieId, userId);
+        }
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),
@@ -170,9 +181,13 @@ public class MovieController {
     // Watchlist endpoints
     @PostMapping("/{movieId}/watchlist")
     public ResponseEntity<AppResponse<Void>> addToWatchlist(
-            @PathVariable Long movieId,
-            @RequestParam Long userId) {
-        movieService.addToWatchlist(movieId, userId);
+            @PathVariable Long movieId) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("addToWatchlist userId = {}, movieId = {}", userId, movieId);
+        if (userId != null) {
+            movieService.addToWatchlist(movieId, userId);
+        }
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),
@@ -184,9 +199,14 @@ public class MovieController {
 
     @DeleteMapping("/{movieId}/watchlist")
     public ResponseEntity<AppResponse<Void>> removeFromWatchlist(
-            @PathVariable Long movieId,
-            @RequestParam Long userId) {
-        movieService.removeFromWatchlist(movieId, userId);
+            @PathVariable Long movieId) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("removeFromWatchlist userId = {}, movieId = {}", userId, movieId);
+        if (userId != null) {
+            movieService.removeFromWatchlist(movieId, userId);
+        }
+
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),

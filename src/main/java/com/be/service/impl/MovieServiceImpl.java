@@ -182,7 +182,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     // Watchlist
-    @Transactional(readOnly = true)
+    @Transactional(rollbackFor = Exception.class)
     public void addToWatchlist(Long movieId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found", "", "", ""));
