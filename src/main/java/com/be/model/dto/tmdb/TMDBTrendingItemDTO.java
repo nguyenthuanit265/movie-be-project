@@ -13,11 +13,10 @@ import java.util.List;
 public class TMDBTrendingItemDTO {
     private Long id;
     private String title;
-    private String name;                    // For TV shows
-    private String originalTitle;
+    private String name;
     @JsonProperty("original_title")
-    private String originalName;            // For TV shows
-    private String mediaType;               // movie, tv
+    private String originalTitle;
+    private String mediaType;
     private String overview;
     @JsonProperty("poster_path")
     private String posterPath;

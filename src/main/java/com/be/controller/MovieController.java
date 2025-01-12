@@ -100,15 +100,7 @@ public class MovieController {
             @PathVariable Long movieId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-//        List<MovieTrailerDTO> trailers = movieService.getMovieTrailers(movieId);
-//
-//        return ResponseEntity.ok(AppResponse.buildResponse(
-//                null,
-//                request.getRequestURI(),
-//                "Movie trailers retrieved successfully",
-//                HttpStatus.OK.value(),
-//                trailers
-//        ));
+
         Page<MovieTrailerDTO> movieTrailerPage = movieService.getMovieTrailers(movieId, PageRequest.of(page, size));
         PageResponse<MovieTrailerDTO> pageResponse = PageResponse.of(movieTrailerPage);
         return ResponseEntity.ok(AppResponse.buildResponse(
