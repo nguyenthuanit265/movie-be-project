@@ -1,17 +1,25 @@
 package com.be.service.impl;
 
+import com.be.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class EmailServiceImpl {
-    @Value("${spring.mail.username}")
+public class EmailServiceImpl implements EmailService {
+    @Value("${spring.mail.username:'nguyenthuanit265@gmail.com'}")
     private String fromEmail;
 
     private final JavaMailSender mailSender;
 
+    public EmailServiceImpl(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    @Override
     public void sendPasswordResetEmail(String to, String token) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -19,7 +27,7 @@ public class EmailServiceImpl {
             message.setTo(to);
             message.setSubject("Password Reset Request");
             message.setText("To reset your password, click the link below:\n\n" +
-                    "http://your-frontend-url/reset-password?token=" + token);
+                    "http://localhost:5173/reset-password?token=" + token);
 
             mailSender.send(message);
             log.info("Password reset email sent to: {}", to);

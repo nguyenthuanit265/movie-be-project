@@ -32,7 +32,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class TMDBService {
-
+    private final String BASE_URL = "https://api.themoviedb.org/3";
+    private final String BEARER_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhODgwNTcxNTRiOTBjZDJkMDBjNmJhYmQwZjRmNDljMyIsIm5iZiI6MTY1MjYyNTIxMi4zMjA5OTk5LCJzdWIiOiI2MjgxMGYzYzIwZTZhNTdhYTRhMTdjMzgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.FoYex7DxuosvaiPiffLYbOnvhQ4Hbrf2XdVQXf8VXTc";
+    private final String BASE_IMAGE_URL = "https://image.tmdb.org/t/p/";
     private static final int BATCH_SIZE = 20;
     private final RestTemplate restTemplate;
     private final MovieRepository movieRepository;
