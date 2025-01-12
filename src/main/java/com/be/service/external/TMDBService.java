@@ -94,18 +94,6 @@ public class TMDBService {
         this.movieRepository = movieRepository;
     }
 
-    @PostConstruct
-    private void executeTest() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.themoviedb.org/3/search/movie?query=batman&include_adult=false&language=en-US&page=1"))
-                .header("accept", "application/json")
-                .header("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhODgwNTcxNTRiOTBjZDJkMDBjNmJhYmQwZjRmNDljMyIsIm5iZiI6MTY1MjYyNTIxMi4zMjA5OTk5LCJzdWIiOiI2MjgxMGYzYzIwZTZhNTdhYTRhMTdjMzgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.FoYex7DxuosvaiPiffLYbOnvhQ4Hbrf2XdVQXf8VXTc")
-                .method("GET", HttpRequest.BodyPublishers.noBody())
-                .build();
-        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        log.info("Response: " + response.body().toString());
-    }
-
     public Movie importMovieFromTMDB(Long tmdbId) {
         String url = String.format("%s/movie/%d", BASE_URL, tmdbId);
         TMDBMovieDTO tmdbMovie = restTemplate.getForObject(url, TMDBMovieDTO.class);

@@ -48,6 +48,12 @@ spring:
           batch_size: 100
         cache:
           use_second_level_cache: false
+
+app:
+  tmdb:
+    base-url: ${TMDB_BASE_URL}
+    bearer-token: ${TMDB_BEARER_TOKEN}
+
 logging:
   level:
     com:
