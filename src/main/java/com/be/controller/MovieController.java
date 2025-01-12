@@ -148,6 +148,7 @@ public class MovieController {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("rateMovie userId = {}, movieId = {}, rating = {}", userId, movieId, ratingRequest.getRating());
         if (userId != null) {
+            ratingRequest.setUserId(userId);
             rating = movieService.rateMovie(movieId, ratingRequest.getUserId(), ratingRequest.getRating());
         }
         return ResponseEntity.ok(AppResponse.buildResponse(
