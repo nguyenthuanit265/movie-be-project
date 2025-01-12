@@ -10,6 +10,7 @@ import com.be.repository.MovieTrailerRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -33,6 +34,15 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TMDBService {
 
+    @Value("${app.tmdb.base-url:''}")
+    private String baseUrl;
+
+    @Value("${app.tmdb.bearer-token:''}")
+    private String bearerToken;
+
+    private final String BASE_URL = baseUrl;
+    private final String BEARER_TOKEN = bearerToken;
+    private final String BASE_IMAGE_URL = "https://image.tmdb.org/t/p/";
     private static final int BATCH_SIZE = 20;
     private final RestTemplate restTemplate;
     private final MovieRepository movieRepository;

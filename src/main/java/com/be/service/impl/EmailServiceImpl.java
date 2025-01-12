@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class EmailServiceImpl implements EmailService {
-    @Value("${spring.mail.username:'nguyenthuanit265@gmail.com'}")
+    @Value("${spring.mail.username:''}")
     private String fromEmail;
 
     private final JavaMailSender mailSender;
