@@ -1,10 +1,10 @@
 package com.be.service.external;
 
+import com.be.appexception.ResourceNotFoundException;
 import com.be.model.dto.tmdb.*;
-import com.be.model.entity.CategoryType;
-import com.be.model.entity.Movie;
-import com.be.model.entity.MovieCategory;
-import com.be.model.entity.MovieTrailer;
+import com.be.model.entity.*;
+import com.be.repository.CastRepository;
+import com.be.repository.MovieCastRepository;
 import com.be.repository.MovieRepository;
 import com.be.repository.MovieTrailerRepository;
 import jakarta.annotation.PostConstruct;
@@ -33,9 +33,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TMDBService {
 
+    private static final int BATCH_SIZE = 20;
     private final RestTemplate restTemplate;
     private final MovieRepository movieRepository;
     private final MovieTrailerRepository movieTrailerRepository;
+    private final MovieCastRepository movieCastRepository;
+    private final CastRepository castRepository;
 
     // Image sizes available from TMDB
     public static class ImageSize {
@@ -63,9 +66,14 @@ public class TMDBService {
     }
 
 
-    public TMDBService(RestTemplate restTemplate, MovieRepository movieRepository,
-                       MovieTrailerRepository movieTrailerRepository) {
+    public TMDBService(RestTemplate restTemplate,
+                       MovieRepository movieRepository,
+                       MovieTrailerRepository movieTrailerRepository,
+                       MovieCastRepository movieCastRepository,
+                       CastRepository castRepository) {
         this.movieTrailerRepository = movieTrailerRepository;
+        this.movieCastRepository = movieCastRepository;
+        this.castRepository = castRepository;
         // Configure RestTemplate with headers
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("accept", "application/json");
@@ -206,14 +214,6 @@ public class TMDBService {
         return restTemplate.getForObject(url, TMDBMovieDTO.class);
     }
 
-
-    // Get Movie Credits (Cast & Crew)
-    public TMDBCreditsResponse getMovieCredits(Long movieId) {
-        String url = String.format("%s/movie/%d/credits?language=en-US", BASE_URL, movieId);
-
-        log.info("TMDB API Request - Get Movie Credits: {}", url);
-        return restTemplate.getForObject(url, TMDBCreditsResponse.class);
-    }
 
     // Get Movie Reviews
     public TMDBReviewResponse getMovieReviews(Long movieId, int page) {
@@ -493,6 +493,158 @@ public class TMDBService {
         movie.setVoteCount(tmdbMovie.getVoteCount());
         movie.setPosterUrl(getFullPosterPath(tmdbMovie.getPosterPath()));
         movie.setBackdropUrl(getFullBackdropPath(tmdbMovie.getBackdropPath()));
+    }
+
+    // Get Movie Credits (Cast & Crew)
+    public TMDBCreditsResponse getMovieCredits(Long movieId) {
+        String url = String.format("%s/movie/%d/credits?language=en-US", BASE_URL, movieId);
+
+        log.info("TMDB API Request - Get Movie Credits: {}", url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        log.info("TMDB API Response: {}", response.getBody());
+
+        return restTemplate.getForObject(url, TMDBCreditsResponse.class);
+    }
+
+    /*Sync movie cast*/
+    @Async
+    @Transactional
+    public CompletableFuture<String> syncMovieCasts(Long movieId) {
+        try {
+            log.info("Started syncing cast for movie ID: {}", movieId);
+
+            Movie movie = movieRepository.findByTmdbId(movieId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+
+            TMDBCreditsResponse credits = getMovieCredits(movieId);
+
+            for (TMDBCastDTO castDTO : credits.getCast()) {
+                // Find or create cast
+                Cast cast = castRepository.findByTmdbId(castDTO.getId())
+                        .orElseGet(() -> {
+                            Cast newCast = Cast.builder()
+                                    .tmdbId(castDTO.getId())
+                                    .name(castDTO.getName())
+                                    .profilePath(castDTO.getProfile_path())
+                                    .build();
+                            return castRepository.save(newCast);
+                        });
+
+                // Create movie cast relationship if it doesn't exist
+                MovieCastId movieCastId = new MovieCastId(movie.getId(), cast.getId(), castDTO.getCharacter());
+
+                if (!movieCastRepository.existsById(movieCastId)) {
+                    MovieCast movieCast = MovieCast.builder()
+                            .id(movieCastId)
+                            .movie(movie)
+                            .cast(cast)
+                            .role(castDTO.getKnown_for_department())
+                            .build();
+
+                    movieCastRepository.save(movieCast);
+                }
+            }
+
+            log.info("Completed syncing cast for movie ID: {}", movieId);
+            return CompletableFuture.completedFuture("Cast sync completed successfully");
+        } catch (Exception e) {
+            log.error("Error syncing cast for movie ID {}: ", movieId, e);
+            return CompletableFuture.completedFuture("Error syncing cast: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void syncMovieCast(Movie movie) {
+        log.info("Syncing cast for movie: {} (ID: {})", movie.getTitle(), movie.getId());
+
+        if (movie.getTmdbId() == null) {
+            log.warn("Skipping movie {} - No TMDB ID", movie.getTitle());
+            return;
+        }
+
+        TMDBCreditsResponse credits = getMovieCredits(movie.getTmdbId());
+
+        for (TMDBCastDTO castDTO : credits.getCast()) {
+            try {
+                // Find or create cast
+                Cast cast = castRepository.findByTmdbId(castDTO.getId())
+                        .orElseGet(() -> {
+                            Cast newCast = Cast.builder()
+                                    .tmdbId(castDTO.getId())
+                                    .name(castDTO.getName())
+                                    .profilePath(castDTO.getProfile_path())
+                                    .build();
+                            return castRepository.save(newCast);
+                        });
+
+                // Create movie cast relationship
+                MovieCastId movieCastId = new MovieCastId(movie.getId(), cast.getId(), castDTO.getCharacter());
+
+                if (!movieCastRepository.existsById(movieCastId)) {
+                    MovieCast movieCast = MovieCast.builder()
+                            .id(movieCastId)
+                            .movie(movie)
+                            .cast(cast)
+                            .role(castDTO.getKnown_for_department())
+                            .build();
+
+                    movieCastRepository.save(movieCast);
+                }
+            } catch (Exception e) {
+                log.error("Error processing cast member {} for movie {}: ",
+                        castDTO.getName(), movie.getTitle(), e);
+            }
+        }
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<String> syncAllMovieCasts() {
+        try {
+            log.info("Started batch sync of movie casts");
+
+            // Get all movies that need cast sync
+            List<Movie> movies = movieRepository.findAll();
+            int totalMovies = movies.size();
+            int processedMovies = 0;
+            List<String> errors = new ArrayList<>();
+
+            // Process movies in batches
+            for (int i = 0; i < movies.size(); i += BATCH_SIZE) {
+                int endIndex = Math.min(i + BATCH_SIZE, movies.size());
+                List<Movie> batch = movies.subList(i, endIndex);
+
+                // Process each movie in the batch
+                for (Movie movie : batch) {
+                    try {
+                        syncMovieCast(movie);
+                        processedMovies++;
+                        log.info("Progress: {}/{} movies processed", processedMovies, totalMovies);
+                    } catch (Exception e) {
+                        String error = String.format("Error syncing cast for movie %s (ID: %d): %s",
+                                movie.getTitle(), movie.getId(), e.getMessage());
+                        errors.add(error);
+                        log.error(error, e);
+                    }
+                }
+
+                // Add delay between batches to avoid rate limiting
+                Thread.sleep(1000); // 1 second delay
+            }
+
+            // Prepare completion message
+            String result = String.format("Completed syncing casts for %d movies. ", processedMovies);
+            if (!errors.isEmpty()) {
+                result += String.format("Errors occurred for %d movies.", errors.size());
+            }
+
+            log.info(result);
+            return CompletableFuture.completedFuture(result);
+
+        } catch (Exception e) {
+            log.error("Error in batch sync process: ", e);
+            return CompletableFuture.completedFuture("Error in batch sync: " + e.getMessage());
+        }
     }
 
 }

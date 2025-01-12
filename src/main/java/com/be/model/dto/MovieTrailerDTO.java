@@ -1,6 +1,7 @@
 package com.be.model.dto;
 
 import com.be.model.entity.MovieTrailer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,14 +15,22 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class MovieTrailerDTO {
     private Long id;
+
+    @JsonProperty("movie_id")
     private Long movieId;
+
+    @JsonProperty("movie_title")
     private String movieTitle;  // Additional movie info
     private String key;         // YouTube video key
     private String name;
     private String site;        // "YouTube", "Vimeo", etc.
     private String type;        // "Trailer", "Teaser", etc.
     private boolean official;
+
+    @JsonProperty("published_at")
     private LocalDateTime publishedAt;
+
+    @JsonProperty("poster_path")
     private String posterPath;  // Movie poster for thumbnail
 
     // Helper method to convert Entity to DTO

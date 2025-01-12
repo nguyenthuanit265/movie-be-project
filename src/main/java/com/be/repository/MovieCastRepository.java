@@ -3,6 +3,7 @@ package com.be.repository;
 import com.be.model.entity.Cast;
 import com.be.model.entity.Movie;
 import com.be.model.entity.MovieCast;
+import com.be.model.entity.MovieCastId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,4 +41,6 @@ public interface MovieCastRepository extends JpaRepository<MovieCast, Long> {
             @Param("search") String search,
             Pageable pageable
     );
+
+    boolean existsById(MovieCastId id);
 }

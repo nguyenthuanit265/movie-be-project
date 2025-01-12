@@ -17,6 +17,9 @@ public class Cast extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tmdb_id", unique = true)
+    private Long tmdbId;
+
     @Column(nullable = false)
     private String name;
 

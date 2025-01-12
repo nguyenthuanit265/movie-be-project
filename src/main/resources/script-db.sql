@@ -208,3 +208,6 @@ CREATE TABLE password_reset_tokens
 
 CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens (user_id);
 CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens (token);
+
+
+ALTER TABLE casts ADD COLUMN tmdb_id BIGINT UNIQUE;
