@@ -10,7 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ResetPasswordRequest {
-    @NotEmpty
     private String token;
 
     @NotEmpty

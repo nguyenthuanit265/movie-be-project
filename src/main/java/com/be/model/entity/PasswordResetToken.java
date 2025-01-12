@@ -23,6 +23,7 @@ public class PasswordResetToken extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
     public boolean isExpired() {

@@ -26,6 +26,16 @@ jobs:
 
       # Build Java application
       - name: Build with Maven
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SHOW_SQL: false
+          LOG_LEVEL: INFO
         run: mvn clean package -DskipTests
 
       # Create application configuration
