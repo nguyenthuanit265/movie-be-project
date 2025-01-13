@@ -34,10 +34,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TMDBService {
 
-    @Value("${app.tmdb.base-url:''}")
+    @Value("${app.tmdb.url:''}")
     private String baseUrl;
 
-    @Value("${app.tmdb.bearer-token:''}")
+    @Value("${app.tmdb.token:''}")
     private String bearerToken;
 
     private final String BASE_URL = "https://api.themoviedb.org/3" ;
