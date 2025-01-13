@@ -102,4 +102,17 @@ public class TMDBSyncController {
                 String.format("Started syncing casts for %d movies", movieIds.size())
         ));
     }
+
+    @PostMapping("/genres")
+    public ResponseEntity<AppResponse<String>> syncGenres() {
+        tmdbService.syncGenres();
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Genre sync started",
+                HttpStatus.OK.value(),
+                "Sync process started"
+        ));
+    }
 }

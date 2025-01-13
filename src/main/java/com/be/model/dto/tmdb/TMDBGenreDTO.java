@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TMDBGenreDTO {
-    private Long id;        // TMDB genre id
-    private String name;    // Genre name (e.g., "Action", "Drama", "Comedy")
+    private Long id;
+    private String name;
 }

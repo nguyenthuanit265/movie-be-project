@@ -2,6 +2,7 @@ package com.be.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.util.Set;
 
 @Entity
@@ -15,6 +16,9 @@ public class Genre {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "tmdb_id", unique = true)
+    private Long tmdbId;
 
     @Column(unique = true, nullable = false)
     private String name;

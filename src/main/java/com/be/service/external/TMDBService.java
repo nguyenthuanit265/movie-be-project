@@ -3,10 +3,7 @@ package com.be.service.external;
 import com.be.appexception.ResourceNotFoundException;
 import com.be.model.dto.tmdb.*;
 import com.be.model.entity.*;
-import com.be.repository.CastRepository;
-import com.be.repository.MovieCastRepository;
-import com.be.repository.MovieRepository;
-import com.be.repository.MovieTrailerRepository;
+import com.be.repository.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +34,7 @@ public class TMDBService {
     @Value("${app.tmdb.token:''}")
     private String bearerToken;
 
-    private final String BASE_URL = "https://api.themoviedb.org/3" ;
+    private final String BASE_URL = "https://api.themoviedb.org/3";
     private final String BASE_IMAGE_URL = "https://image.tmdb.org/t/p/";
     private static final int BATCH_SIZE = 20;
     private final RestTemplate restTemplate;
@@ -45,6 +42,7 @@ public class TMDBService {
     private final MovieTrailerRepository movieTrailerRepository;
     private final MovieCastRepository movieCastRepository;
     private final CastRepository castRepository;
+    private final GenreRepository genreRepository;
 
     // Image sizes available from TMDB
     public static class ImageSize {
@@ -76,10 +74,12 @@ public class TMDBService {
                        MovieRepository movieRepository,
                        MovieTrailerRepository movieTrailerRepository,
                        MovieCastRepository movieCastRepository,
-                       CastRepository castRepository) {
+                       CastRepository castRepository,
+                       GenreRepository genreRepository) {
         this.movieTrailerRepository = movieTrailerRepository;
         this.movieCastRepository = movieCastRepository;
         this.castRepository = castRepository;
+        this.genreRepository = genreRepository;
         // Configure RestTemplate with headers
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("accept", "application/json");
@@ -638,6 +638,52 @@ public class TMDBService {
         } catch (Exception e) {
             log.error("Error in batch sync process: ", e);
             return CompletableFuture.completedFuture("Error in batch sync: " + e.getMessage());
+        }
+    }
+
+    // Get all genres from TMDB
+    public TMDBGenreResponse getGenres() {
+        String url = String.format("%s/genre/movie/list?language=en-US", BASE_URL);
+
+        log.info("TMDB API Request - Get Genres: {}", url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        log.info("TMDB API Response: {}", response.getBody());
+
+        return restTemplate.getForObject(url, TMDBGenreResponse.class);
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<String> syncGenres() {
+        try {
+            log.info("Started syncing genres");
+            TMDBGenreResponse genreResponse = getGenres();
+            int count = 0;
+
+            for (TMDBGenreDTO genreDTO : genreResponse.getGenres()) {
+                try {
+                    // Find or create genre
+                    Genre genre = genreRepository.findByTmdbId(genreDTO.getId())
+                            .orElse(new Genre());
+
+                    genre.setTmdbId(genreDTO.getId());
+                    genre.setName(genreDTO.getName());
+
+                    genreRepository.save(genre);
+                    count++;
+
+                } catch (Exception e) {
+                    log.error("Error syncing genre {}: ", genreDTO.getName(), e);
+                }
+            }
+
+            String message = String.format("Successfully synced %d genres", count);
+            log.info(message);
+            return CompletableFuture.completedFuture(message);
+
+        } catch (Exception e) {
+            log.error("Error syncing genres: ", e);
+            return CompletableFuture.completedFuture("Error syncing genres: " + e.getMessage());
         }
     }
 
