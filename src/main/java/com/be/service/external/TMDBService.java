@@ -455,6 +455,32 @@ public class TMDBService {
                 movie.getCategories().add(category);
             }
 
+            // gemre
+            Set<Genre> genres = new HashSet<>();
+            if (item.getGenreIds() != null) {
+                for (Integer genreId : item.getGenreIds()) {
+                    Genre genre = genreRepository.findByTmdbId(Long.valueOf(genreId))
+                            .orElseGet(() -> {
+                                // If genre doesn't exist, create it
+                                TMDBGenreDTO genreDetails = getGenreDetails(Long.valueOf(genreId));
+                                if (genreDetails != null) {
+                                    Genre newGenre = Genre.builder()
+                                            .tmdbId(genreDetails.getId())
+                                            .name(genreDetails.getName())
+                                            .build();
+                                    return genreRepository.save(newGenre);
+                                }
+                                return null;
+                            });
+
+                    if (genre != null) {
+                        genres.add(genre);
+                    }
+                }
+            }
+            movie.setGenres(genres);
+
+
             // Save to database
             movieRepository.save(movie);
             log.info("Saved/Updated movie: {}", movie.getTitle());
@@ -684,6 +710,16 @@ public class TMDBService {
         } catch (Exception e) {
             log.error("Error syncing genres: ", e);
             return CompletableFuture.completedFuture("Error syncing genres: " + e.getMessage());
+        }
+    }
+
+    private TMDBGenreDTO getGenreDetails(Long genreId) {
+        try {
+            String url = String.format("%s/genre/%d?language=en-US", BASE_URL, genreId);
+            return restTemplate.getForObject(url, TMDBGenreDTO.class);
+        } catch (Exception e) {
+            log.error("Error getting genre details for ID {}: ", genreId, e);
+            return null;
         }
     }
 
