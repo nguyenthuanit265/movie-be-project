@@ -1,11 +1,13 @@
 package com.be.model.dto;
 
 import com.be.model.entity.Movie;
+import com.be.model.entity.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Slf4j
 public class MovieDTO {
     private Long id;
 
@@ -56,8 +59,11 @@ public class MovieDTO {
     @JsonProperty("backdrop_url")
     private String backdropUrl;
 
-    public static MovieDTO fromEntity(Movie movie) {
-        return MovieDTO.builder()
+    private boolean isFavorite;
+    private boolean isInWatchlist;
+
+    public static MovieDTO fromEntity(Movie movie, User currentUser) {
+        MovieDTO movieDTO = MovieDTO.builder()
                 .id(movie.getId())
                 .tmdbId(movie.getTmdbId())
                 .title(movie.getTitle())
@@ -78,5 +84,13 @@ public class MovieDTO {
                 .posterUrl(movie.getPosterUrl())
                 .backdropUrl(movie.getBackdropUrl())
                 .build();
+        if (currentUser != null) {
+            log.info("current user = {}", currentUser.getId());
+            movieDTO.setFavorite(movie.getFavoritedBy().contains(currentUser));
+            movieDTO.setInWatchlist(movie.getWatchlistedBy().contains(currentUser));
+        }
+
+        return movieDTO;
+
     }
 }

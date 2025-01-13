@@ -5,6 +5,7 @@ import com.be.model.dto.*;
 import com.be.model.entity.*;
 import com.be.repository.*;
 import com.be.service.MovieService;
+import com.be.utils.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -70,14 +71,8 @@ public class MovieServiceImpl implements MovieService {
                 .build();
     }
 
-    public List<MovieDTO> toDTOList(List<Movie> movies) {
-        return movies.stream()
-                .map(this::toMovieDTO)
-                .collect(Collectors.toList());
-    }
-
-    public Page<MovieDTO> toMovieDTOPage(Page<Movie> moviePage) {
-        return moviePage.map(this::toMovieDTO);
+    public Page<MovieDTO> toMovieDTOPage(Page<Movie> moviePage, User user) {
+        return moviePage.map(movie -> MovieDTO.fromEntity(movie, user));
     }
 
     @Transactional(readOnly = true)
@@ -91,12 +86,19 @@ public class MovieServiceImpl implements MovieService {
 
     @Transactional(readOnly = true)  // Add this
     public Page<MovieDTO> findAll(Pageable pageable) {
-        return toMovieDTOPage(movieRepository.findAll(pageable));
+        Long userId = SecurityUtils.getCurrentUserId();
+        User currentUser = userId != null ?
+                userRepository.findById(userId).orElse(null) : null;
+        return toMovieDTOPage(movieRepository.findAll(pageable), currentUser);
     }
 
     @Transactional(readOnly = true)  // Add this
     public Page<MovieDTO> findMovieByCategories(String category, Pageable pageable) {
-        return toMovieDTOPage(movieRepository.findMovieByCategory(category, pageable));
+        Long userId = SecurityUtils.getCurrentUserId();
+        User currentUser = userId != null ?
+                userRepository.findById(userId).orElse(null) : null;
+
+        return toMovieDTOPage(movieRepository.findMovieByCategory(category, pageable), currentUser);
     }
 
     @Transactional(readOnly = true)
@@ -232,7 +234,7 @@ public class MovieServiceImpl implements MovieService {
         List<Genre> favoriteGenres = movieRepository.findUserFavoriteGenres(userId);
 
         return movieRepository.findByGenresInOrderByPopularityDesc(favoriteGenres, pageable)
-                .map(MovieDTO::fromEntity);
+                .map(item -> MovieDTO.fromEntity(item, user));
     }
 
     // Recommendations based on current movie
@@ -243,7 +245,7 @@ public class MovieServiceImpl implements MovieService {
 
         // Get similar movies using genres and vector similarity
         return movieRepository.findSimilarMovies(movie.getId(), pageable)
-                .map(MovieDTO::fromEntity);
+                .map(item -> MovieDTO.fromEntity(item, null));
     }
 
     public Page<MovieTrailerDTO> getLatestTrailers(Pageable pageable) {
