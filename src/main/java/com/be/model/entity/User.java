@@ -57,4 +57,12 @@ public class User extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "movie_id")
     )
     private Set<Movie> favorites;
+
+    private String provider;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

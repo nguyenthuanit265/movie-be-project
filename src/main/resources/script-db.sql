@@ -215,3 +215,10 @@ ALTER TABLE casts
 
 ALTER TABLE genres
     ADD COLUMN tmdb_id BIGINT UNIQUE;
+
+
+
+ALTER TABLE users
+ADD COLUMN provider VARCHAR(50),
+ADD COLUMN provider_id VARCHAR(255),
+ADD COLUMN image_url VARCHAR(255);

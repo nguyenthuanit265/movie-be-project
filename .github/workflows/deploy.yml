@@ -53,6 +53,17 @@ jobs:
                     auth: true
                     starttls:
                       enable: true
+            security:
+              oauth2:
+                client:
+                  registration:
+                    google:
+                      client-id: YOUR_CLIENT_ID
+                      client-secret: YOUR_CLIENT_SECRET
+                      redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
+                      scope:
+                        - email
+                        - profile
             application:
               name: movie-be-project
             flyway:
