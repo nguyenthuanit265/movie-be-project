@@ -280,4 +280,18 @@ public class MovieController {
     }
 
     // TODO  Quick info, Add to watch list, Casts, Reviews
+
+    @GetMapping("/{movieId}/detail")
+    public ResponseEntity<AppResponse<MovieDetailDTO>> getMovieDetail(
+            @PathVariable Long movieId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        MovieDetailDTO movieDetail = movieService.getMovieDetail(movieId, userId);
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Movie details retrieved successfully",
+                HttpStatus.OK.value(),
+                movieDetail
+        ));
+    }
 }

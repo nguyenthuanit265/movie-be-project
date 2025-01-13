@@ -139,6 +139,7 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/movies/{movieId}/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/{movieId}/recommendations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/trailers/latest").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/{movieId}/detail").permitAll()
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()

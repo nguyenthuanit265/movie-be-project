@@ -1,9 +1,6 @@
 package com.be.service;
 
-import com.be.model.dto.CastDTO;
-import com.be.model.dto.MovieDTO;
-import com.be.model.dto.MovieTrailerDTO;
-import com.be.model.dto.ReviewDTO;
+import com.be.model.dto.*;
 import com.be.model.entity.Movie;
 import com.be.model.entity.MovieRating;
 import com.be.model.entity.Review;
@@ -45,4 +42,6 @@ public interface MovieService {
     void addToWatchlist(Long movieId, Long userId);
 
     Page<MovieTrailerDTO> getLatestTrailers(Pageable pageable);
+
+    MovieDetailDTO getMovieDetail(Long movieId, Long userId);
 }

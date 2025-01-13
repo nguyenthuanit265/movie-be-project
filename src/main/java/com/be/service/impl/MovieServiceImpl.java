@@ -83,7 +83,6 @@ public class MovieServiceImpl implements MovieService {
         );
     }
 
-
     @Transactional(readOnly = true)  // Add this
     public Page<MovieDTO> findAll(Pageable pageable) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -252,5 +251,54 @@ public class MovieServiceImpl implements MovieService {
         return movieTrailerRepository
                 .findAllByOrderByPublishedAtDesc(pageable)
                 .map(MovieTrailerDTO::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public MovieDetailDTO getMovieDetail(Long movieId, Long userId) {
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+
+        User currentUser = null;
+        if (userId != null) {
+            currentUser = userRepository.findById(userId)
+                    .orElse(null);
+        }
+
+        return MovieDetailDTO.builder()
+                .id(movie.getId())
+                .tmdbId(movie.getTmdbId())
+                .title(movie.getTitle())
+                .originalTitle(movie.getOriginalTitle())
+                .overview(movie.getOverview())
+                .releaseDate(movie.getReleaseDate())
+                .runtime(movie.getRuntime())
+                .posterPath(movie.getPosterPath())
+                .backdropPath(movie.getBackdropPath())
+                .posterUrl(movie.getPosterUrl())
+                .backdropUrl(movie.getBackdropUrl())
+                .popularity(movie.getPopularity())
+                .voteAverage(movie.getVoteAverage())
+                .voteCount(movie.getVoteCount())
+                .genres(movie.getGenres().stream()
+                        .map(GenreDTO::fromEntity)
+                        .collect(Collectors.toSet()))
+                .casts(movie.getCasts().stream()
+                        .map(MovieCastDTO::fromEntity)
+                        .collect(Collectors.toSet()))
+                .trailers(movie.getMovieTrailers().stream()
+                        .map(MovieTrailerDTO::fromEntity)
+                        .collect(Collectors.toSet()))
+                .isFavorite(currentUser != null && movie.getFavoritedBy().contains(currentUser))
+                .isInWatchlist(currentUser != null && movie.getWatchlistedBy().contains(currentUser))
+                .userRating(currentUser != null ? getUserRating(movie, currentUser) : null)
+                .build();
+    }
+
+    private Float getUserRating(Movie movie, User user) {
+        return movie.getRatings().stream()
+                .filter(rating -> rating.getUser().equals(user))
+                .map(MovieRating::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }
