@@ -130,7 +130,7 @@ jobs:
             docker stop movie-be-project || true
             docker rm movie-be-project || true
             
-            docker run -d --name movie-be-project --network host --restart unless-stopped --health-cmd "curl -f http://localhost:8081/actuator/health || exit 1" --health-interval 30s --health-timeout 10s --health-retries 3 -e SPRING_DATASOURCE_URL="jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }} -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} -e SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} -e SPRING_MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" -e APP_TMDB_BEARER_TOKEN=${{ secrets.TMDB_BEARER_TOKEN }} ${{ env.DOCKER_IMAGE }}:latest            
+            docker run -d --name movie-be-project -p 8081:8081 --network host --restart unless-stopped --health-cmd "curl -f http://localhost:8081/actuator/health || exit 1" --health-interval 30s --health-timeout 10s --health-retries 3 -e SPRING_DATASOURCE_URL="jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }} -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} -e SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} -e SPRING_MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" -e APP_TMDB_BEARER_TOKEN=${{ secrets.TMDB_BEARER_TOKEN }} ${{ env.DOCKER_IMAGE }}:latest            
             sleep 15
             echo "Container Logs:"
             docker logs movie-be-project
