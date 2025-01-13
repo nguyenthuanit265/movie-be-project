@@ -55,6 +55,10 @@ jobs:
                       enable: true
             application:
               name: movie-be-project
+            flyway:
+              enabled: false
+              locations: classpath:db/migration
+              baseline-on-migrate: false
             datasource:
               url: jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}
               username: ${{ secrets.DB_USERNAME }}
