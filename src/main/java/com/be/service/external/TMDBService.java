@@ -34,14 +34,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TMDBService {
 
-    @Value("${app.tmdb.url:''}")
-    private String baseUrl;
-
     @Value("${app.tmdb.token:''}")
     private String bearerToken;
 
     private final String BASE_URL = "https://api.themoviedb.org/3" ;
-    private final String BEARER_TOKEN = bearerToken;
     private final String BASE_IMAGE_URL = "https://image.tmdb.org/t/p/";
     private static final int BATCH_SIZE = 20;
     private final RestTemplate restTemplate;
@@ -87,7 +83,7 @@ public class TMDBService {
         // Configure RestTemplate with headers
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("accept", "application/json");
-            request.getHeaders().add("Authorization", "Bearer " + BEARER_TOKEN);
+            request.getHeaders().add("Authorization", "Bearer " + bearerToken);
             return execution.execute(request, body);
         });
         this.restTemplate = restTemplate;
