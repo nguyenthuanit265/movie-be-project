@@ -1,6 +1,8 @@
 package com.be.controller;
 
 
+import com.be.appexception.ResourceNotFoundException;
+import com.be.service.MovieRecommendationService;
 import com.be.utils.SecurityUtils;
 import com.be.model.base.AppResponse;
 import com.be.model.base.PageResponse;
@@ -23,10 +25,14 @@ import org.springframework.web.bind.annotation.*;
 public class MovieController {
     private final HttpServletRequest request;
     private final MovieService movieService;
+    private final MovieRecommendationService movieRecommendationService;
 
-    public MovieController(HttpServletRequest request, MovieService movieService) {
+    public MovieController(HttpServletRequest request,
+                           MovieService movieService,
+                           MovieRecommendationService movieRecommendationService) {
         this.request = request;
         this.movieService = movieService;
+        this.movieRecommendationService = movieRecommendationService;
     }
 
     @ExceptionHandler(Exception.class)
@@ -242,28 +248,6 @@ public class MovieController {
         ));
     }
 
-    // Recommendations endpoints
-    @GetMapping("/{movieId}/recommendations")
-    public ResponseEntity<AppResponse<Page<MovieDTO>>> getRecommendations(
-            @PathVariable Long movieId,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Page<MovieDTO> recommendations;
-        if (userId != null) {
-            recommendations = movieService.getRecommendationsByUserHistory(userId, PageRequest.of(page, size));
-        } else {
-            recommendations = movieService.getSimilarMovies(movieId, PageRequest.of(page, size));
-        }
-        return ResponseEntity.ok(AppResponse.buildResponse(
-                null,
-                request.getRequestURI(),
-                "Recommendations retrieved successfully",
-                HttpStatus.OK.value(),
-                recommendations
-        ));
-    }
-
     @GetMapping("/trailers/latest")
     public ResponseEntity<AppResponse<Page<MovieTrailerDTO>>> getLatestTrailers(
             @RequestParam(defaultValue = "0") int page,
@@ -297,4 +281,66 @@ public class MovieController {
                 movieDetail
         ));
     }
+
+    @GetMapping("/recommendations/user")
+    public ResponseEntity<AppResponse<Page<MovieDTO>>> getRecommendationsForUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request) {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw new ResourceNotFoundException("User must be logged in");
+        }
+
+        Page<MovieDTO> recommendations = movieRecommendationService
+                .getRecommendationsByUserHistory(userId, PageRequest.of(page, size));
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Recommendations retrieved successfully",
+                HttpStatus.OK.value(),
+                recommendations
+        ));
+    }
+
+    @GetMapping("/{movieId}/recommendations")
+    public ResponseEntity<AppResponse<Page<MovieDTO>>> getSimilarMovies(
+            @PathVariable Long movieId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<MovieDTO> recommendations = movieRecommendationService
+                .getRecommendationsByVectorSimilarity(movieId, PageRequest.of(page, size));
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Similar movies retrieved successfully",
+                HttpStatus.OK.value(),
+                recommendations
+        ));
+    }
+
+//    @GetMapping("/{movieId}/recommendations")
+//    public ResponseEntity<AppResponse<Page<MovieDTO>>> getRecommendations(
+//            @PathVariable Long movieId,
+//            @RequestParam(required = false) Long userId,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "20") int size) {
+//        Page<MovieDTO> recommendations;
+//        if (userId != null) {
+//            recommendations = movieService.getRecommendationsByUserHistory(userId, PageRequest.of(page, size));
+//        } else {
+//            recommendations = movieService.getSimilarMovies(movieId, PageRequest.of(page, size));
+//        }
+//        return ResponseEntity.ok(AppResponse.buildResponse(
+//                null,
+//                request.getRequestURI(),
+//                "Recommendations retrieved successfully",
+//                HttpStatus.OK.value(),
+//                recommendations
+//        ));
+//    }
 }

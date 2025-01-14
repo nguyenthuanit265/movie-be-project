@@ -1,6 +1,5 @@
 package com.be.repository;
 
-import com.be.model.entity.CategoryType;
 import com.be.model.entity.Genre;
 import com.be.model.entity.Movie;
 import org.springframework.data.domain.Page;
@@ -10,8 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -85,6 +82,43 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
             """, nativeQuery = true)
     Page<Movie> findSimilarMoviesByVector(
             @Param("movieId") Long movieId,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT DISTINCT m.* FROM movies m
+        JOIN movie_genres mg ON m.id = mg.movie_id
+        WHERE mg.genre_id IN :genreIds
+        AND m.id NOT IN :excludeWatchlist
+        AND m.id NOT IN :excludeFavorites
+        ORDER BY m.popularity DESC, m.vote_average DESC
+        """, nativeQuery = true)
+    Page<Movie> findSimilarMoviesByGenres(
+            @Param("genreIds") List<Long> genreIds,
+            @Param("excludeWatchlist") List<Long> excludeWatchlist,
+            @Param("excludeFavorites") List<Long> excludeFavorites,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        WITH movie_genres_list AS (
+            SELECT mg.genre_id
+            FROM movie_genres mg
+            WHERE mg.movie_id = :movieId
+        )
+        SELECT m.* FROM movies m
+        JOIN movie_genres mg ON m.id = mg.movie_id
+        WHERE m.id != :movieId
+        AND mg.genre_id IN :genreIds
+        GROUP BY m.id
+        ORDER BY 
+            COUNT(CASE WHEN mg.genre_id IN (SELECT genre_id FROM movie_genres_list) THEN 1 END) DESC,
+            m.popularity DESC,
+            m.vote_average DESC
+        """, nativeQuery = true)
+    Page<Movie> findSimilarMoviesByVector(
+            @Param("movieId") Long movieId,
+            @Param("genreIds") List<Long> genreIds,
             Pageable pageable
     );
 }
