@@ -359,53 +359,75 @@ public class TMDBService {
     }
 
     @Async
-    @Transactional
     public CompletableFuture<String> syncLatestTrailers() {
         try {
             log.info("Started syncing latest trailers");
+
+            // Get upcoming movies first
             TMDBMovieResponse upcomingMovies = getUpcomingMovies();
+            int totalMovies = upcomingMovies.getResults().size();
+            int processedMovies = 0;
+            int totalTrailers = 0;
 
             for (TMDBMovieDTO movieDTO : upcomingMovies.getResults()) {
-                // Get movie trailers
-                TMDBVideoResponse videos = getMovieVideos(movieDTO.getId());
+                try {
+                    // Get movie's videos/trailers
+                    TMDBVideoResponse videos = getMovieVideos(movieDTO.getId());
 
-                // Filter for official trailers only
-                List<TMDBVideoDTO> trailers = videos.getResults().stream()
-                        .filter(v -> "Trailer".equals(v.getType()) && v.isOfficial())
-                        .collect(Collectors.toList());
-
-                if (!trailers.isEmpty()) {
-                    // Save or update movie first
+                    // Find or create movie
                     Movie movie = movieRepository.findByTmdbId(movieDTO.getId())
-                            .orElse(new Movie());
+                            .orElseGet(() -> {
+                                Movie newMovie = new Movie();
+                                updateMovieFromTMDB(newMovie, movieDTO);
+                                return movieRepository.save(newMovie);
+                            });
 
-                    updateMovieFromTMDB(movie, movieDTO);
-                    movie = movieRepository.save(movie);  // Save movie first and get the managed entity
+                    // Process each video
+                    for (TMDBVideoDTO video : videos.getResults()) {
+                        // Only process trailers
+                        if ("Trailer".equals(video.getType())) {
+                            MovieTrailer trailer = movieTrailerRepository
+                                    .findByTmdbId(Long.valueOf(video.getId()))
+                                    .orElse(new MovieTrailer());
 
-                    // Save trailers
-                    for (TMDBVideoDTO trailer : trailers) {
-                        MovieTrailer movieTrailer = MovieTrailer.builder()
-                                .movie(movie)  // Use the managed movie entity
-                                .key(trailer.getKey())
-                                .name(trailer.getName())
-                                .site(trailer.getSite())
-                                .type(trailer.getType())
-                                .official(trailer.isOfficial())
-                                .publishedAt(Instant.parse(trailer.getPublishedAt())
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDateTime())
-                                .build();
+                            trailer.setMovie(movie);
+                            trailer.setTmdbId(Long.valueOf(video.getId()));
+                            trailer.setName(video.getName());
+                            trailer.setKey(video.getKey());
+                            trailer.setSite(video.getSite());
+                            trailer.setType(video.getType());
+                            trailer.setOfficial(video.getOfficial());
+                            if (video.getPublished_at() != null) {
+                                trailer.setPublishedAt(ZonedDateTime.parse(video.getPublished_at()).toLocalDateTime());
+                            }
 
-                        movieTrailerRepository.save(movieTrailer);
+                            movieTrailerRepository.save(trailer);
+                            totalTrailers++;
+                        }
                     }
+
+                    processedMovies++;
+                    log.info("Progress: {}/{} movies processed, {} trailers found",
+                            processedMovies, totalMovies, totalTrailers);
+
+                } catch (Exception e) {
+                    log.error("Error processing trailers for movie {}: {}",
+                            movieDTO.getTitle(), e.getMessage());
                 }
             }
 
-            log.info("Completed syncing latest trailers");
-            return CompletableFuture.completedFuture("Latest trailers sync completed successfully");
+            String result = String.format(
+                    "Completed syncing %d trailers from %d upcoming movies",
+                    totalTrailers, processedMovies
+            );
+            log.info(result);
+            return CompletableFuture.completedFuture(result);
+
         } catch (Exception e) {
             log.error("Error syncing latest trailers: ", e);
-            return CompletableFuture.completedFuture("Error syncing latest trailers: " + e.getMessage());
+            return CompletableFuture.completedFuture(
+                    "Error syncing latest trailers: " + e.getMessage()
+            );
         }
     }
 

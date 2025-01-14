@@ -21,6 +21,9 @@ public class MovieTrailer extends BaseEntity {
     @JoinColumn(name = "movie_id")
     private Movie movie;
 
+    @Column(name = "tmdb_id", unique = true)  // Add this field
+    private Long tmdbId;
+
     private String key;  // YouTube video key
     private String name;
     private String site;  // "YouTube", "Vimeo", etc.

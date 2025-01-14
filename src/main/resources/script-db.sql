@@ -286,3 +286,9 @@ ADD COLUMN collection_id BIGINT,
 ADD COLUMN collection_name VARCHAR(255),
 ADD COLUMN collection_poster_path VARCHAR(255),
 ADD COLUMN collection_backdrop_path VARCHAR(255);
+
+
+
+
+ALTER TABLE movie_trailers
+    ADD COLUMN tmdb_id BIGINT UNIQUE;

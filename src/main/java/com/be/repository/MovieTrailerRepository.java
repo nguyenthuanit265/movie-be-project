@@ -1,5 +1,6 @@
 package com.be.repository;
 
+import com.be.model.entity.Movie;
 import com.be.model.entity.MovieTrailer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MovieTrailerRepository extends JpaRepository<MovieTrailer, Long> {
@@ -27,4 +29,7 @@ public interface MovieTrailerRepository extends JpaRepository<MovieTrailer, Long
             "WHERE mt.official = true " +
             "ORDER BY mt.publishedAt DESC")
     Page<MovieTrailer> findLatestOfficialTrailers(Pageable pageable);
+
+    Optional<MovieTrailer> findByTmdbId(Long tmdbId);
+    List<MovieTrailer> findByMovieOrderByPublishedAtDesc(Movie movie);
 }

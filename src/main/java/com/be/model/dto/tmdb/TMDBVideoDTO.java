@@ -10,12 +10,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TMDBVideoDTO {
     private String id;
-    private String key;          // YouTube video key
+    private String key;
     private String name;
-    private String site;         // "YouTube", "Vimeo", etc.
-    private String type;         // "Trailer", "Teaser", etc.
-    private boolean official;
-
+    private String site;  // YouTube, Vimeo, etc.
+    private String type;  // Trailer, Teaser, etc.
+    private Boolean official;
     @JsonProperty("published_at")
-    private String publishedAt;
+    private String published_at;
 }
