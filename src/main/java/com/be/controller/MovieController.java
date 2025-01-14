@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -283,9 +284,11 @@ public class MovieController {
 
     @GetMapping("/{movieId}/detail")
     public ResponseEntity<AppResponse<MovieDetailDTO>> getMovieDetail(
-            @PathVariable Long movieId) {
+            @PathVariable Long movieId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         Long userId = SecurityUtils.getCurrentUserId();
-        MovieDetailDTO movieDetail = movieService.getMovieDetail(movieId, userId);
+        MovieDetailDTO movieDetail = movieService.getMovieDetail(movieId, userId, PageRequest.of(page, size, Sort.by("createdAt").descending()));
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),

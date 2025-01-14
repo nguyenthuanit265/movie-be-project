@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 public class ReviewDTO {
     private Long id;
     private Long movieId;
+    private String tmdbId;
     private String movieTitle;
     private Long userId;
     private String userName;
@@ -28,6 +29,7 @@ public class ReviewDTO {
     public static ReviewDTO fromEntity(Review review) {
         return ReviewDTO.builder()
                 .id(review.getId())
+                .tmdbId(review.getTmdbId())
                 .movieId(review.getMovie().getId())
                 .movieTitle(review.getMovie().getTitle())
                 .userId(review.getUser().getId())

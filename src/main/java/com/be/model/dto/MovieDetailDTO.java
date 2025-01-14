@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -35,4 +36,8 @@ public class MovieDetailDTO {
     private Boolean isFavorite;
     private Boolean isInWatchlist;
     private Float userRating;
+
+    private Float averageRating;
+    private Integer totalReviews;
+    private Page<ReviewDTO> reviews;
 }

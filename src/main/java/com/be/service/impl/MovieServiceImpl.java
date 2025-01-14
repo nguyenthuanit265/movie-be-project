@@ -254,7 +254,7 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Transactional(readOnly = true)
-    public MovieDetailDTO getMovieDetail(Long movieId, Long userId) {
+    public MovieDetailDTO getMovieDetail(Long movieId, Long userId, Pageable reviewPageable) {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
 
@@ -262,6 +262,20 @@ public class MovieServiceImpl implements MovieService {
         if (userId != null) {
             currentUser = userRepository.findById(userId)
                     .orElse(null);
+        }
+
+        // Get paginated reviews
+        Page<Review> reviewPage = reviewRepository
+                .findByMovieOrderByCreatedAtDesc(movie, reviewPageable);
+
+        // Calculate average rating
+        float averageRating = movie.getReviews().stream()
+                .filter(r -> r.getRating() != null)
+                .map(Review::getRating)
+                .reduce(0f, Float::sum);
+
+        if (!movie.getReviews().isEmpty()) {
+            averageRating /= movie.getReviews().size();
         }
 
         return MovieDetailDTO.builder()
@@ -291,6 +305,9 @@ public class MovieServiceImpl implements MovieService {
                 .isFavorite(currentUser != null && movie.getFavoritedBy().contains(currentUser))
                 .isInWatchlist(currentUser != null && movie.getWatchlistedBy().contains(currentUser))
                 .userRating(currentUser != null ? getUserRating(movie, currentUser) : null)
+                .averageRating(averageRating)
+                .totalReviews(movie.getReviews().size())
+                .reviews(reviewPage.map(ReviewDTO::fromEntity))
                 .build();
     }
 

@@ -43,5 +43,5 @@ public interface MovieService {
 
     Page<MovieTrailerDTO> getLatestTrailers(Pageable pageable);
 
-    MovieDetailDTO getMovieDetail(Long movieId, Long userId);
+    MovieDetailDTO getMovieDetail(Long movieId, Long userId, Pageable reviewPageable);
 }
