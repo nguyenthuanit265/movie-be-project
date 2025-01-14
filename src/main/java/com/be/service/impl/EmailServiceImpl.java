@@ -13,6 +13,9 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.username:''}")
     private String fromEmail;
 
+    @Value("${app.fe.host:'http://localhost:5173'}")
+    private String hostFrontEnd;
+
     private final JavaMailSender mailSender;
 
     public EmailServiceImpl(JavaMailSender mailSender) {
@@ -27,7 +30,7 @@ public class EmailServiceImpl implements EmailService {
             message.setTo(to);
             message.setSubject("Password Reset Request");
             message.setText("To reset your password, click the link below:\n\n" +
-                    "http://localhost:5173/reset-password?token=" + token);
+                    hostFrontEnd + "/reset-password?token=" + token);
 
             mailSender.send(message);
             log.info("Password reset email sent to: {}", to);

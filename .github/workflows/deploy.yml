@@ -100,6 +100,8 @@ jobs:
                     use_second_level_cache: false
           
           app:
+            fe:
+              host: http://14.225.210.222:5173
             tmdb:
               url: https://api.themoviedb.org/3
               token: ${{ secrets.TMDB_BEARER_TOKEN }}
