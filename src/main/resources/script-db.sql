@@ -219,12 +219,70 @@ ALTER TABLE genres
 
 
 ALTER TABLE users
-ADD COLUMN provider VARCHAR(50),
+    ADD COLUMN provider VARCHAR(50),
 ADD COLUMN provider_id VARCHAR(255),
 ADD COLUMN image_url VARCHAR(255);
 
 
 
-
 ALTER TABLE reviews
     ADD COLUMN tmdb_id VARCHAR(255) UNIQUE;
+
+
+-- Production Companies
+CREATE TABLE production_companies
+(
+    id             BIGSERIAL PRIMARY KEY,
+    tmdb_id        BIGINT,
+    name           VARCHAR(255),
+    logo_path      VARCHAR(255),
+    origin_country VARCHAR(10),
+    movie_id       BIGINT REFERENCES movies (id) ON DELETE CASCADE
+);
+
+-- Origin Countries
+CREATE TABLE movie_origin_countries
+(
+    movie_id     BIGINT REFERENCES movies (id) ON DELETE CASCADE,
+    country_code VARCHAR(10),
+    PRIMARY KEY (movie_id, country_code)
+);
+
+-- Production Countries
+CREATE TABLE movie_production_countries
+(
+    movie_id   BIGINT REFERENCES movies (id) ON DELETE CASCADE,
+    iso_3166_1 VARCHAR(10),
+    name       VARCHAR(255),
+    PRIMARY KEY (movie_id, iso_3166_1)
+);
+
+-- Spoken Languages
+CREATE TABLE movie_spoken_languages
+(
+    movie_id     BIGINT REFERENCES movies (id) ON DELETE CASCADE,
+    english_name VARCHAR(255),
+    iso_639_1    VARCHAR(10),
+    name         VARCHAR(255),
+    PRIMARY KEY (movie_id, iso_639_1)
+);
+
+-- Add new columns to movies table
+ALTER TABLE movies
+    ADD COLUMN adult BOOLEAN,
+ADD COLUMN belongs_to_collection TEXT,
+ADD COLUMN budget BIGINT,
+ADD COLUMN homepage VARCHAR(255),
+ADD COLUMN imdb_id VARCHAR(20),
+ADD COLUMN original_language VARCHAR(10),
+ADD COLUMN revenue BIGINT,
+ADD COLUMN status VARCHAR(50),
+ADD COLUMN tagline TEXT;
+
+
+
+ALTER TABLE movies
+ADD COLUMN collection_id BIGINT,
+ADD COLUMN collection_name VARCHAR(255),
+ADD COLUMN collection_poster_path VARCHAR(255),
+ADD COLUMN collection_backdrop_path VARCHAR(255);

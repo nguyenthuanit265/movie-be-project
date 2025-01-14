@@ -37,6 +37,21 @@ public class MovieDetailDTO {
     private Boolean isInWatchlist;
     private Float userRating;
 
+    // New fields
+    private Boolean adult;
+    private String belongsToCollection;
+    private Long budget;
+    private String homepage;
+    private String imdbId;
+    private String originalLanguage;
+    private Set<String> originCountries;
+    private Long revenue;
+    private String status;
+    private String tagline;
+    private Set<ProductionCompanyDTO> productionCompanies;
+    private Set<ProductionCountryDTO> productionCountries;
+    private Set<SpokenLanguageDTO> spokenLanguages;
+
     private Float averageRating;
     private Integer totalReviews;
     private Page<ReviewDTO> reviews;

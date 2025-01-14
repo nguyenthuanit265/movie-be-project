@@ -29,12 +29,28 @@ public class TMDBMovieDTO {
     @JsonProperty("vote_count")
     private Integer voteCount;
     private List<TMDBGenreDTO> genres;
-    private Boolean adult;
     @JsonProperty("original_language")
     private String originalLanguage;
     private String status;
     private String tagline;
     private Boolean video;
+
+    // New fields
+    private Boolean adult;
+
+    @JsonProperty("belongs_to_collection")
+    private TMDBCollectionDTO belongs_to_collection;
+    private Long budget;
+    private String homepage;
+
     @JsonProperty("imdb_id")
     private String imdbId;
+
+    @JsonProperty("origin_country")
+    private List<String> originCountry;
+    private Long revenue;
+
+    private List<TMDBProductionCompanyDTO> production_companies;
+    private List<TMDBProductionCountryDTO> production_countries;
+    private List<TMDBSpokenLanguageDTO> spoken_languages;
 }

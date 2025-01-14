@@ -88,6 +88,54 @@ public class Movie extends BaseEntity {
     @OneToMany(mappedBy = "movie")
     private Set<Review> reviews;
 
+    private Boolean adult;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "id", column = @Column(name = "collection_id")),
+            @AttributeOverride(name = "name", column = @Column(name = "collection_name")),
+            @AttributeOverride(name = "posterPath", column = @Column(name = "collection_poster_path")),
+            @AttributeOverride(name = "backdropPath", column = @Column(name = "collection_backdrop_path"))
+    })
+    private MovieCollection collection;
+
+    private Long budget;
+
+    private String homepage;
+
+    @Column(name = "imdb_id")
+    private String imdbId;
+
+    @Column(name = "original_language")
+    private String originalLanguage;
+
+    @ElementCollection
+    @CollectionTable(name = "movie_origin_countries",
+            joinColumns = @JoinColumn(name = "movie_id"))
+    @Column(name = "country_code")
+    private Set<String> originCountries;
+
+    private Long revenue;
+
+    private String status;
+
+    private String tagline;
+
+    @OneToMany(mappedBy = "movie")
+    private Set<MovieProductionCompany> productionCompanies;
+
+    @ElementCollection
+    @CollectionTable(name = "movie_production_countries",
+            joinColumns = @JoinColumn(name = "movie_id"))
+    private Set<ProductionCountry> productionCountries;
+
+    @ElementCollection
+    @CollectionTable(name = "movie_spoken_languages",
+            joinColumns = @JoinColumn(name = "movie_id"))
+    private Set<SpokenLanguage> spokenLanguages;
+
+
+
     public boolean isInCategory(CategoryType category) {
         return categories.stream()
                 .anyMatch(mc -> Objects.equals(mc.getCategory(), category.name()));

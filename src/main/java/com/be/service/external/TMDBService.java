@@ -206,9 +206,9 @@ public class TMDBService {
     public TMDBMovieDTO getMovieDetails(Long movieId) {
         String url = String.format("%s/movie/%d?language=en-US", BASE_URL, movieId);
 
-        log.info("getMovieDetails - TMDB API Request - Get Movie Details: {}", url);
+        log.info("TMDB API Request - Get Movie Details: {}", url);
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-        log.info("getMovieDetails - TMDB API Response: {}", response.getBody());
+        log.info("TMDB API Response: {}", response.getBody());
 
         return restTemplate.getForObject(url, TMDBMovieDTO.class);
     }
@@ -295,32 +295,42 @@ public class TMDBService {
             TMDBMovieResponse response = getPopularMovies(1);  // Get first page
 
             for (TMDBMovieDTO movieDTO : response.getResults()) {
-                Movie movie = movieRepository.findByTmdbId(movieDTO.getId())
-                        .orElse(new Movie());
+                try {
+                    // Get full movie details
+                    TMDBMovieDTO fullMovieDetails = getMovieDetails(movieDTO.getId());
 
-                updateMovieFromTMDB(movie, movieDTO);
-                MovieCategory category;
-                if (CollectionUtils.isEmpty(movie.getCategories())) {
-                    category = new MovieCategory();
-                } else {
-                    category = movie.getCategories().stream()
-                            .filter(mc -> Objects.equals(mc.getCategory(), CategoryType.POPULAR.name()))
-                            .findFirst()
-                            .orElse(new MovieCategory());
+                    Movie movie = movieRepository.findByTmdbId(movieDTO.getId())
+                            .orElse(new Movie());
+
+                    updateMovieFromTMDB(movie, fullMovieDetails);
+
+                    // Update category
+                    MovieCategory category;
+                    if (CollectionUtils.isEmpty(movie.getCategories())) {
+                        category = new MovieCategory();
+                    } else {
+                        category = movie.getCategories().stream()
+                                .filter(mc -> Objects.equals(mc.getCategory(), CategoryType.POPULAR.name()))
+                                .findFirst()
+                                .orElse(new MovieCategory());
+                    }
+
+                    category.setMovie(movie);
+                    category.setCategory(CategoryType.POPULAR.name());
+                    category.setCreatedAt(ZonedDateTime.now());
+                    category.setUpdatedAt(ZonedDateTime.now());
+
+                    if (CollectionUtils.isEmpty(movie.getCategories())) {
+                        movie.setCategories(new HashSet<>(List.of(category)));
+                    } else {
+                        movie.getCategories().add(category);
+                    }
+
+                    movieRepository.save(movie);
+                    log.info("Saved/Updated popular movie: {}", movie.getTitle());
+                } catch (Exception e) {
+                    log.error("Error processing popular movie {}: ", movieDTO.getTitle(), e);
                 }
-
-                category.setMovie(movie);
-                category.setCategory(CategoryType.POPULAR.name());
-                category.setCreatedAt(ZonedDateTime.now());
-                category.setUpdatedAt(ZonedDateTime.now());
-
-                if (CollectionUtils.isEmpty(movie.getCategories())) {
-                    movie.setCategories(new HashSet<>(List.of(category)));
-                } else {
-                    movie.getCategories().add(category);
-                }
-
-                movieRepository.save(movie);
             }
 
             log.info("Completed syncing popular movies");
@@ -450,7 +460,7 @@ public class TMDBService {
                 movie.getCategories().add(category);
             }
 
-            // gemre
+            // genre
             Set<Genre> genres = new HashSet<>();
             if (item.getGenreIds() != null) {
                 for (Integer genreId : item.getGenreIds()) {
@@ -475,6 +485,77 @@ public class TMDBService {
             }
             movie.setGenres(genres);
 
+            // New fields
+            movie.setAdult(movieDetails.getAdult());
+
+            if (movieDetails.getBelongs_to_collection() != null) {
+                MovieCollection collection = new MovieCollection();
+                collection.setId(movieDetails.getBelongs_to_collection().getId());
+                collection.setName(movieDetails.getBelongs_to_collection().getName());
+                collection.setPosterPath(movieDetails.getBelongs_to_collection().getPoster_path());
+                collection.setBackdropPath(movieDetails.getBelongs_to_collection().getBackdrop_path());
+                movie.setCollection(collection);
+            }
+
+            movie.setBudget(movieDetails.getBudget());
+            movie.setHomepage(movieDetails.getHomepage());
+            movie.setImdbId(movieDetails.getImdbId());
+            movie.setOriginalLanguage(movieDetails.getOriginalLanguage());
+            movie.setRevenue(movieDetails.getRevenue());
+            movie.setStatus(movieDetails.getStatus());
+            movie.setTagline(movieDetails.getTagline());
+
+            if (movieDetails.getReleaseDate() != null) {
+                movie.setReleaseDate(LocalDate.parse(movieDetails.getReleaseDate()));
+            }
+
+            // Origin countries
+            if (movieDetails.getOriginCountry() != null) {
+                movie.setOriginCountries(new HashSet<>(movieDetails.getOriginCountry()));
+            }
+
+            // Production companies
+            if (movieDetails.getProduction_companies() != null) {
+                Set<MovieProductionCompany> companies = movieDetails.getProduction_companies().stream()
+                        .map(companyDTO -> {
+                            MovieProductionCompany company = new MovieProductionCompany();
+                            company.setTmdbId(companyDTO.getId());
+                            company.setName(companyDTO.getName());
+                            company.setLogoPath(companyDTO.getLogo_path());
+                            company.setOriginCountry(companyDTO.getOrigin_country());
+                            company.setMovie(movie);
+                            return company;
+                        })
+                        .collect(Collectors.toSet());
+                movie.setProductionCompanies(companies);
+            }
+
+            // Production countries
+            if (movieDetails.getProduction_countries() != null) {
+                Set<ProductionCountry> countries = movieDetails.getProduction_countries().stream()
+                        .map(countryDTO -> {
+                            ProductionCountry country = new ProductionCountry();
+                            country.setIso31661(countryDTO.getIso_3166_1());
+                            country.setName(countryDTO.getName());
+                            return country;
+                        })
+                        .collect(Collectors.toSet());
+                movie.setProductionCountries(countries);
+            }
+
+            // Spoken languages
+            if (movieDetails.getSpoken_languages() != null) {
+                Set<SpokenLanguage> languages = movieDetails.getSpoken_languages().stream()
+                        .map(langDTO -> {
+                            SpokenLanguage language = new SpokenLanguage();
+                            language.setEnglishName(langDTO.getEnglish_name());
+                            language.setIso6391(langDTO.getIso_639_1());
+                            language.setName(langDTO.getName());
+                            return language;
+                        })
+                        .collect(Collectors.toSet());
+                movie.setSpokenLanguages(languages);
+            }
 
             // Save to database
             movieRepository.save(movie);
@@ -496,11 +577,14 @@ public class TMDBService {
     }
 
     private void updateMovieFromTMDB(Movie movie, TMDBMovieDTO tmdbMovie) {
+        // Basic fields
         movie.setTmdbId(tmdbMovie.getId());
         movie.setTitle(tmdbMovie.getTitle());
         movie.setOriginalTitle(tmdbMovie.getOriginalTitle());
         movie.setOverview(tmdbMovie.getOverview());
-        movie.setReleaseDate(LocalDate.parse(tmdbMovie.getReleaseDate()));
+        if (tmdbMovie.getReleaseDate() != null) {
+            movie.setReleaseDate(LocalDate.parse(tmdbMovie.getReleaseDate()));
+        }
         movie.setPosterPath(tmdbMovie.getPosterPath());
         movie.setBackdropPath(tmdbMovie.getBackdropPath());
         movie.setPopularity(tmdbMovie.getPopularity());
@@ -508,6 +592,69 @@ public class TMDBService {
         movie.setVoteCount(tmdbMovie.getVoteCount());
         movie.setPosterUrl(getFullPosterPath(tmdbMovie.getPosterPath()));
         movie.setBackdropUrl(getFullBackdropPath(tmdbMovie.getBackdropPath()));
+
+        // New fields
+        movie.setAdult(tmdbMovie.getAdult());
+        if (tmdbMovie.getBelongs_to_collection() != null) {
+            MovieCollection collection = new MovieCollection();
+            collection.setId(tmdbMovie.getBelongs_to_collection().getId());
+            collection.setName(tmdbMovie.getBelongs_to_collection().getName());
+            collection.setPosterPath(tmdbMovie.getBelongs_to_collection().getPoster_path());
+            collection.setBackdropPath(tmdbMovie.getBelongs_to_collection().getBackdrop_path());
+            movie.setCollection(collection);
+        }
+
+        movie.setBudget(tmdbMovie.getBudget());
+        movie.setHomepage(tmdbMovie.getHomepage());
+        movie.setImdbId(tmdbMovie.getImdbId());
+        movie.setOriginalLanguage(tmdbMovie.getOriginalLanguage());
+        movie.setRevenue(tmdbMovie.getRevenue());
+        movie.setRuntime(Float.valueOf(tmdbMovie.getRuntime()));
+        movie.setStatus(tmdbMovie.getStatus());
+        movie.setTagline(tmdbMovie.getTagline());
+
+        // Set production companies
+        if (tmdbMovie.getProduction_companies() != null) {
+            Set<MovieProductionCompany> companies = tmdbMovie.getProduction_companies().stream()
+                    .map(companyDTO -> {
+                        MovieProductionCompany company = new MovieProductionCompany();
+                        company.setTmdbId(companyDTO.getId());
+                        company.setName(companyDTO.getName());
+                        company.setLogoPath(companyDTO.getLogo_path());
+                        company.setOriginCountry(companyDTO.getOrigin_country());
+                        company.setMovie(movie);
+                        return company;
+                    })
+                    .collect(Collectors.toSet());
+            movie.setProductionCompanies(companies);
+        }
+
+        // Set production countries
+        if (tmdbMovie.getProduction_countries() != null) {
+            Set<ProductionCountry> countries = tmdbMovie.getProduction_countries().stream()
+                    .map(countryDTO -> {
+                        ProductionCountry country = new ProductionCountry();
+                        country.setIso31661(countryDTO.getIso_3166_1());
+                        country.setName(countryDTO.getName());
+                        return country;
+                    })
+                    .collect(Collectors.toSet());
+            movie.setProductionCountries(countries);
+        }
+
+        // Set spoken languages
+        if (tmdbMovie.getSpoken_languages() != null) {
+            Set<SpokenLanguage> languages = tmdbMovie.getSpoken_languages().stream()
+                    .map(langDTO -> {
+                        SpokenLanguage language = new SpokenLanguage();
+                        language.setEnglishName(langDTO.getEnglish_name());
+                        language.setIso6391(langDTO.getIso_639_1());
+                        language.setName(langDTO.getName());
+                        return language;
+                    })
+                    .collect(Collectors.toSet());
+            movie.setSpokenLanguages(languages);
+        }
     }
 
     // Get Movie Credits (Cast & Crew)
