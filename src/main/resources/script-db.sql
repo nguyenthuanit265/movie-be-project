@@ -1,6 +1,6 @@
 -- Enable bigserial extension
-CREATE
-EXTENSION IF NOT EXISTS "bigserial-ossp";
+-- CREATE
+-- EXTENSION IF NOT EXISTS "bigserial-ossp";
 -- Enable vector extension for AI features
 CREATE
 EXTENSION IF NOT EXISTS vector;
@@ -282,11 +282,10 @@ ADD COLUMN tagline TEXT;
 
 
 ALTER TABLE movies
-ADD COLUMN collection_id BIGINT,
+    ADD COLUMN collection_id BIGINT,
 ADD COLUMN collection_name VARCHAR(255),
 ADD COLUMN collection_poster_path VARCHAR(255),
 ADD COLUMN collection_backdrop_path VARCHAR(255);
-
 
 
 
