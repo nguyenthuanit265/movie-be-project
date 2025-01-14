@@ -249,7 +249,7 @@ public class MovieServiceImpl implements MovieService {
 
     public Page<MovieTrailerDTO> getLatestTrailers(Pageable pageable) {
         return movieTrailerRepository
-                .findAllByOrderByPublishedAtDesc(pageable)
+                .findDistinctOrderByPublishedAtDesc(pageable)
                 .map(MovieTrailerDTO::fromEntity);
     }
 

@@ -22,7 +22,18 @@ public interface MovieTrailerRepository extends JpaRepository<MovieTrailer, Long
 
     List<MovieTrailer> findByTypeAndOfficialTrueOrderByPublishedAtDesc(String type, Pageable pageable); // Get official trailers
 
-    Page<MovieTrailer> findAllByOrderByPublishedAtDesc(Pageable pageable);
+    @Query(value = """
+            SELECT mt.*
+                FROM movie_trailers mt
+                JOIN (
+                    SELECT DISTINCT key, MAX(id) AS id
+                    FROM movie_trailers
+                    GROUP BY key
+                ) sub ON mt.key = sub.key AND mt.id = sub.id
+                ORDER BY mt.published_at DESC
+            
+            """, nativeQuery = true)
+    Page<MovieTrailer> findDistinctOrderByPublishedAtDesc(Pageable pageable);
 
     // Optional: Get only official trailers
     @Query("SELECT mt FROM MovieTrailer mt " +
