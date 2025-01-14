@@ -278,6 +278,16 @@ public class MovieServiceImpl implements MovieService {
             averageRating /= movie.getReviews().size();
         }
 
+        MovieCollectionDTO collectionDTO = null;
+        if (movie.getCollection() != null) {
+            collectionDTO = MovieCollectionDTO.builder()
+                    .id(movie.getCollection().getId())
+                    .name(movie.getCollection().getName())
+                    .posterPath(movie.getCollection().getPosterPath())
+                    .backdropPath(movie.getCollection().getBackdropPath())
+                    .build();
+        }
+
         return MovieDetailDTO.builder()
                 .id(movie.getId())
                 .tmdbId(movie.getTmdbId())
@@ -293,6 +303,17 @@ public class MovieServiceImpl implements MovieService {
                 .popularity(movie.getPopularity())
                 .voteAverage(movie.getVoteAverage())
                 .voteCount(movie.getVoteCount())
+                // New fields
+                .adult(movie.getAdult())
+                .budget(movie.getBudget())
+                .homepage(movie.getHomepage())
+                .imdbId(movie.getImdbId())
+                .originalLanguage(movie.getOriginalLanguage())
+                .revenue(movie.getRevenue())
+                .status(movie.getStatus())
+                .tagline(movie.getTagline())
+                .collection(collectionDTO)
+                // Relationships
                 .genres(movie.getGenres().stream()
                         .map(GenreDTO::fromEntity)
                         .collect(Collectors.toSet()))

@@ -39,7 +39,7 @@ public class MovieDetailDTO {
 
     // New fields
     private Boolean adult;
-    private String belongsToCollection;
+    private MovieCollectionDTO collection;
     private Long budget;
     private String homepage;
     private String imdbId;
