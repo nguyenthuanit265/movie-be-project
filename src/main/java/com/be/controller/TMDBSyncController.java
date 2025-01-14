@@ -9,10 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -111,6 +108,33 @@ public class TMDBSyncController {
                 null,
                 request.getRequestURI(),
                 "Genre sync started",
+                HttpStatus.OK.value(),
+                "Sync process started"
+        ));
+    }
+
+    @PostMapping("/movie/{movieId}/reviews")
+    public ResponseEntity<AppResponse<String>> syncMovieReviews(
+            @PathVariable Long movieId) {
+        tmdbService.syncMovieReviews(movieId);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Movie reviews sync started",
+                HttpStatus.OK.value(),
+                "Sync process started"
+        ));
+    }
+
+    @PostMapping("/reviews/all")
+    public ResponseEntity<AppResponse<String>> syncAllMovieReviews() {
+        tmdbService.syncAllMovieReviews();
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Full review sync started",
                 HttpStatus.OK.value(),
                 "Sync process started"
         ));

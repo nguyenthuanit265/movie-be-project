@@ -222,3 +222,9 @@ ALTER TABLE users
 ADD COLUMN provider VARCHAR(50),
 ADD COLUMN provider_id VARCHAR(255),
 ADD COLUMN image_url VARCHAR(255);
+
+
+
+
+ALTER TABLE reviews
+    ADD COLUMN tmdb_id VARCHAR(255) UNIQUE;

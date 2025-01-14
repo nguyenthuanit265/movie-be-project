@@ -15,6 +15,9 @@ public class Review extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tmdb_id")
+    private String tmdbId;  // TMDB review ID
+
     @ManyToOne
     @JoinColumn(name = "movie_id")
     private Movie movie;
@@ -26,7 +29,7 @@ public class Review extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    private Float rating;  // Add rating field
+    private Float rating;
 
     @Builder.Default
     private Integer likes = 0;  // Optional: track likes on reviews

@@ -4,7 +4,6 @@ import com.be.appexception.ResourceNotFoundException;
 import com.be.model.dto.tmdb.*;
 import com.be.model.entity.*;
 import com.be.repository.*;
-import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,16 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -43,6 +37,10 @@ public class TMDBService {
     private final MovieCastRepository movieCastRepository;
     private final CastRepository castRepository;
     private final GenreRepository genreRepository;
+    private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
+    private final TransactionTemplate transactionTemplate;
+    private final SystemUserService systemUserService;
 
     // Image sizes available from TMDB
     public static class ImageSize {
@@ -75,11 +73,18 @@ public class TMDBService {
                        MovieTrailerRepository movieTrailerRepository,
                        MovieCastRepository movieCastRepository,
                        CastRepository castRepository,
-                       GenreRepository genreRepository) {
+                       GenreRepository genreRepository,
+                       ReviewRepository reviewRepository,
+                       UserRepository userRepository,
+                       TransactionTemplate transactionTemplate, SystemUserService systemUserService) {
         this.movieTrailerRepository = movieTrailerRepository;
         this.movieCastRepository = movieCastRepository;
         this.castRepository = castRepository;
         this.genreRepository = genreRepository;
+        this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
+        this.transactionTemplate = transactionTemplate;
+        this.systemUserService = systemUserService;
         // Configure RestTemplate with headers
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().add("accept", "application/json");
@@ -206,16 +211,6 @@ public class TMDBService {
         log.info("getMovieDetails - TMDB API Response: {}", response.getBody());
 
         return restTemplate.getForObject(url, TMDBMovieDTO.class);
-    }
-
-
-    // Get Movie Reviews
-    public TMDBReviewResponse getMovieReviews(Long movieId, int page) {
-        String url = String.format("%s/movie/%d/reviews?language=en-US&page=%d",
-                BASE_URL, movieId, page);
-
-        log.info("TMDB API Request - Get Movie Reviews: {}", url);
-        return restTemplate.getForObject(url, TMDBReviewResponse.class);
     }
 
     // Rate Movie
@@ -721,6 +716,195 @@ public class TMDBService {
             log.error("Error getting genre details for ID {}: ", genreId, e);
             return null;
         }
+    }
+
+    // Review
+    public TMDBReviewResponse getMovieReviews(Long movieId, int page) {
+        String url = String.format("%s/movie/%d/reviews?language=en-US&page=%d",
+                BASE_URL, movieId, page);
+
+        log.info("TMDB API Request - Get Movie Reviews: {}", url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        log.info("TMDB API Response: {}", response.getBody());
+
+        return restTemplate.getForObject(url, TMDBReviewResponse.class);
+    }
+
+    @Async
+    @Transactional
+    public CompletableFuture<String> syncMovieReviews(Long movieId) {
+        try {
+            log.info("Started syncing reviews for movie ID: {}", movieId);
+
+            Movie movie = movieRepository.findByTmdbId(movieId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
+
+            int page = 1;
+            int totalPages;
+            int processedReviews = 0;
+
+            do {
+                TMDBReviewResponse reviewResponse = getMovieReviews(movieId, page);
+                totalPages = reviewResponse.getTotalPages();
+
+                for (TMDBReviewDTO reviewDTO : reviewResponse.getResults()) {
+                    try {
+                        // Find or create review
+                        Review review = reviewRepository
+                                .findByTmdbId(reviewDTO.getId())
+                                .orElse(new Review());
+
+                        // Create system user for TMDB reviews if not exists
+                        User systemUser = userRepository
+                                .findByEmail("tmdb_" + reviewDTO.getAuthor() + "@system.local")
+                                .orElseGet(() -> {
+                                    User newUser = User.builder()
+                                            .email("tmdb_" + reviewDTO.getAuthor() + "@system.local")
+                                            .fullName(reviewDTO.getAuthor())
+                                            .provider("TMDB")
+                                            .build();
+                                    return userRepository.save(newUser);
+                                });
+
+                        // Update review
+                        review.setTmdbId(reviewDTO.getId());
+                        review.setMovie(movie);
+                        review.setUser(systemUser);
+                        review.setContent(reviewDTO.getContent());
+                        review.setRating(reviewDTO.getAuthorDetails().getRating());
+                        review.setCreatedAt(ZonedDateTime.parse(reviewDTO.getCreatedAt()));
+
+                        reviewRepository.save(review);
+                        processedReviews++;
+
+                    } catch (Exception e) {
+                        log.error("Error processing review from {}: ",
+                                reviewDTO.getAuthor(), e);
+                    }
+                }
+
+                page++;
+            } while (page <= totalPages);
+
+            String message = String.format("Successfully synced %d reviews for movie %s",
+                    processedReviews, movie.getTitle());
+            log.info(message);
+            return CompletableFuture.completedFuture(message);
+
+        } catch (Exception e) {
+            log.error("Error syncing reviews for movie ID {}: ", movieId, e);
+            return CompletableFuture.completedFuture(
+                    "Error syncing reviews: " + e.getMessage());
+        }
+    }
+
+
+    @Async
+    public CompletableFuture<String> syncAllMovieReviews() {
+        try {
+            log.info("Started syncing reviews for all movies");
+
+            List<Movie> movies = movieRepository.findAll();
+            int totalMovies = movies.size();
+            int processedMovies = 0;
+            int totalReviews = 0;
+            List<String> errors = new ArrayList<>();
+
+            // Process movies in batches
+            for (int i = 0; i < movies.size(); i += BATCH_SIZE) {
+                int endIndex = Math.min(i + BATCH_SIZE, movies.size());
+                List<Movie> batch = movies.subList(i, endIndex);
+
+                for (Movie movie : batch) {
+                    try {
+                        if (movie.getTmdbId() != null) {
+                            int reviewCount = syncReviewsForMovie(movie);
+                            totalReviews += reviewCount;
+                            processedMovies++;
+                            log.info("Progress: {}/{} movies processed, {} reviews synced",
+                                    processedMovies, totalMovies, totalReviews);
+                        }
+                    } catch (Exception e) {
+                        String error = String.format("Error syncing reviews for movie %s (ID: %d): %s",
+                                movie.getTitle(), movie.getId(), e.getMessage());
+                        errors.add(error);
+                        log.error(error, e);
+                    }
+                }
+
+                // Add delay between batches to avoid rate limiting
+                Thread.sleep(1000); // 1 second delay
+            }
+
+            String result = String.format(
+                    "Completed syncing %d reviews across %d/%d movies. ",
+                    totalReviews, processedMovies, totalMovies
+            );
+            if (!errors.isEmpty()) {
+                result += String.format("Errors occurred for %d movies.", errors.size());
+            }
+
+            log.info(result);
+            return CompletableFuture.completedFuture(result);
+
+        } catch (Exception e) {
+            log.error("Error in batch sync process: ", e);
+            return CompletableFuture.completedFuture("Error in batch sync: " + e.getMessage());
+        }
+    }
+
+    private int syncReviewsForMovie(Movie movie) {
+        int processedReviews = 0;
+        int page = 1;
+        int totalPages;
+
+        do {
+            TMDBReviewResponse reviewResponse = getMovieReviews(movie.getTmdbId(), page);
+            totalPages = reviewResponse.getTotalPages();
+
+            // Process each review
+            for (TMDBReviewDTO reviewDTO : reviewResponse.getResults()) {
+                try {
+                    String username = reviewDTO.getAuthorDetails().getUsername();
+
+                    // Create or get system user
+                    User systemUser = systemUserService.getOrCreateSystemUser(username, reviewDTO.getAuthor());
+
+                    // Create review in separate transaction
+                    transactionTemplate.execute(status -> {
+                        try {
+                            Review review = reviewRepository.findByTmdbId(reviewDTO.getId())
+                                    .orElse(new Review());
+
+                            review.setTmdbId(reviewDTO.getId());
+                            review.setMovie(movie);
+                            review.setUser(systemUser);
+                            review.setContent(reviewDTO.getContent());
+                            review.setRating(reviewDTO.getAuthorDetails().getRating());
+
+                            if (reviewDTO.getCreatedAt() != null) {
+                                review.setCreatedAt(ZonedDateTime.parse(reviewDTO.getCreatedAt()));
+                            }
+
+                            reviewRepository.save(review);
+                            return null;
+                        } catch (Exception e) {
+                            status.setRollbackOnly();
+                            throw e;
+                        }
+                    });
+
+                    processedReviews++;
+                } catch (Exception e) {
+                    log.error("Error processing review for movie {}: {}",
+                            movie.getTitle(), e.getMessage());
+                }
+            }
+
+            page++;
+        } while (page <= totalPages);
+
+        return processedReviews;
     }
 
 }
