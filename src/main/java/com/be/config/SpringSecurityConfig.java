@@ -150,6 +150,11 @@ public class SpringSecurityConfig {
                         .requestMatchers("/api/casts/{castId}/detail").permitAll()
                         .requestMatchers("/api/casts/{castId}/movies").permitAll()
 
+                        /*Search*/
+                        .requestMatchers("/api/v1/search/multi").permitAll()
+
+
+
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()
                         .requestMatchers("/api/v1/public").permitAll()
