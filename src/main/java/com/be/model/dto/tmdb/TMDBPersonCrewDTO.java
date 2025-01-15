@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 public class TMDBPersonCrewDTO {
@@ -26,5 +28,5 @@ public class TMDBPersonCrewDTO {
     private Integer voteCount;
     @JsonProperty("credit_id")
     private String creditId;
-    private String genre_ids;
+    private List<String> genre_ids;
 }

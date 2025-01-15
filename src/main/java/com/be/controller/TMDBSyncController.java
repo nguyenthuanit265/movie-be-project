@@ -139,4 +139,17 @@ public class TMDBSyncController {
                 "Sync process started"
         ));
     }
+
+    @PostMapping("/casts/all")
+    public ResponseEntity<AppResponse<String>> syncAllCastDetails() {
+        tmdbService.syncAllCastDetails();
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Cast details sync started",
+                HttpStatus.OK.value(),
+                "Sync process started"
+        ));
+    }
 }

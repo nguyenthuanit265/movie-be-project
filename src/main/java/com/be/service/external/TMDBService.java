@@ -1087,10 +1087,62 @@ public class TMDBService {
         return restTemplate.getForObject(url, TMDBPersonDTO.class);
     }
 
-    @Transactional
-    public void syncCastDetails(Long castId) {
+
+    @Async
+    public CompletableFuture<String> syncAllCastDetails() {
         try {
-            TMDBPersonDTO personDTO = getCastDetails(castId);
+            log.info("Started syncing all cast details");
+
+            List<Cast> casts = castRepository.findAll();
+            int totalCasts = casts.size();
+            int processedCasts = 0;
+            List<String> errors = new ArrayList<>();
+
+            // Process casts in batches to avoid memory issues
+            for (int i = 0; i < casts.size(); i += BATCH_SIZE) {
+                int endIndex = Math.min(i + BATCH_SIZE, casts.size());
+                List<Cast> batch = casts.subList(i, endIndex);
+
+                for (Cast cast : batch) {
+                    try {
+                        if (cast.getTmdbId() != null) {
+                            syncCastDetails(cast.getTmdbId());
+                            processedCasts++;
+                            log.info("Progress: {}/{} casts processed", processedCasts, totalCasts);
+                        }
+                    } catch (Exception e) {
+                        String error = String.format("Error syncing cast %s (ID: %d): %s",
+                                cast.getName(), cast.getId(), e.getMessage());
+                        errors.add(error);
+                        log.error(error, e);
+                    }
+                }
+
+                // Add delay between batches to avoid rate limiting
+                Thread.sleep(1000); // 1 second delay
+            }
+
+            String result = String.format(
+                    "Completed syncing %d/%d casts. ",
+                    processedCasts, totalCasts
+            );
+            if (!errors.isEmpty()) {
+                result += String.format("Errors occurred for %d casts.", errors.size());
+            }
+
+            log.info(result);
+            return CompletableFuture.completedFuture(result);
+
+        } catch (Exception e) {
+            log.error("Error in batch sync process: ", e);
+            return CompletableFuture.completedFuture("Error in batch sync: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void syncCastDetails(Long tmdbId) {
+        try {
+            TMDBPersonDTO personDTO = getCastDetails(tmdbId);
 
             Cast cast = castRepository.findByTmdbId(personDTO.getId())
                     .orElse(new Cast());
@@ -1100,53 +1152,138 @@ public class TMDBService {
             cast.setName(personDTO.getName());
             cast.setProfilePath(personDTO.getProfilePath());
             cast.setBiography(personDTO.getBiography());
-            if (personDTO.getBirthDate() != null) {
-                cast.setBirthDate(LocalDate.parse(personDTO.getBirthDate()));
+
+            // Safely parse birth date
+            try {
+                if (personDTO.getBirthDate() != null && !personDTO.getBirthDate().isEmpty()) {
+                    cast.setBirthDate(LocalDate.parse(personDTO.getBirthDate()));
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse birth date for cast {}: {}", personDTO.getName(), e.getMessage());
             }
+
             cast.setPlaceOfBirth(personDTO.getPlaceOfBirth());
             cast.setKnownForDepartment(personDTO.getKnownForDepartment());
             cast.setPopularity(personDTO.getPopularity());
-            cast.setGender(personDTO.getGender().toString());
+            cast.setGender(personDTO.getGender() != null ? personDTO.getGender().toString() : null);
             cast.setImdbId(personDTO.getImdbId());
 
             cast = castRepository.save(cast);
 
-            // Sync acting credits
-            if (personDTO.getMovieCredits() != null &&
-                    personDTO.getMovieCredits().getCast() != null) {
-                for (TMDBPersonCastDTO creditDTO : personDTO.getMovieCredits().getCast()) {
-                    Movie movie = movieRepository.findByTmdbId(creditDTO.getId())
-                            .orElseGet(() -> {
-                                // Create basic movie if not exists
-                                Movie newMovie = new Movie();
-                                newMovie.setTmdbId(creditDTO.getId());
-                                newMovie.setTitle(creditDTO.getTitle());
-                                newMovie.setPosterPath(creditDTO.getPosterPath());
-                                if (creditDTO.getReleaseDate() != null) {
-                                    newMovie.setReleaseDate(LocalDate.parse(creditDTO.getReleaseDate()));
-                                }
-                                return movieRepository.save(newMovie);
-                            });
-
-                    MovieCastId movieCastId = new MovieCastId(movie.getId(), cast.getId(), creditDTO.getCharacter());
-
-                    if (!movieCastRepository.existsById(movieCastId)) {
-                        MovieCast movieCast = MovieCast.builder()
-                                .id(movieCastId)
-                                .movie(movie)
-                                .cast(cast)
-                                .role(personDTO.getKnownForDepartment())
-                                .build();
-
-                        movieCastRepository.save(movieCast);
-                    }
-                }
+            // Process movie credits
+            if (personDTO.getMovieCredits() != null) {
+                processMovieCredits(cast, personDTO.getMovieCredits());
             }
 
             log.info("Successfully synced cast details for: {}", cast.getName());
         } catch (Exception e) {
-            log.error("Error syncing cast details for ID {}: ", castId, e);
+            log.error("Error syncing cast details for TMDB ID {}: {}", tmdbId, e.getMessage(), e);
             throw e;
+        }
+    }
+
+    private void processMovieCredits(Cast cast, TMDBPersonCreditsDTO credits) {
+        // Process acting credits
+        if (credits.getCast() != null) {
+            for (TMDBPersonCastDTO creditDTO : credits.getCast()) {
+                try {
+                    processMovieCastCredit(cast, creditDTO);
+                } catch (Exception e) {
+                    log.error("Error processing cast credit for {} in movie {}: {}",
+                            cast.getName(), creditDTO.getTitle(), e.getMessage());
+                }
+            }
+        }
+
+        // Process crew credits
+        if (credits.getCrew() != null) {
+            for (TMDBPersonCrewDTO crewDTO : credits.getCrew()) {
+                try {
+                    processMovieCrewCredit(cast, crewDTO);
+                } catch (Exception e) {
+                    log.error("Error processing crew credit for {} in movie {}: {}",
+                            cast.getName(), crewDTO.getTitle(), e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void processMovieCastCredit(Cast cast, TMDBPersonCastDTO creditDTO) {
+        try {
+            Movie movie = movieRepository.findByTmdbId(creditDTO.getId())
+                    .orElseGet(() -> {
+                        Movie newMovie = new Movie();
+                        newMovie.setTmdbId(creditDTO.getId());
+                        newMovie.setTitle(creditDTO.getTitle());
+                        newMovie.setPosterPath(creditDTO.getPoster_path());
+
+                        // Safely parse release date
+                        try {
+                            if (creditDTO.getRelease_date() != null && !creditDTO.getRelease_date().isEmpty()) {
+                                newMovie.setReleaseDate(LocalDate.parse(creditDTO.getRelease_date()));
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to parse release date for movie {}: {}",
+                                    creditDTO.getTitle(), e.getMessage());
+                        }
+
+                        return movieRepository.save(newMovie);
+                    });
+
+            // Handle null or empty character
+            String character = creditDTO.getCharacter();
+            if (character == null || character.trim().isEmpty()) {
+                character = "Unknown Role";
+            }
+
+            MovieCastId movieCastId = new MovieCastId(movie.getId(), cast.getId(), character);
+
+            if (!movieCastRepository.existsById(movieCastId)) {
+                MovieCast movieCast = MovieCast.builder()
+                        .id(movieCastId)
+                        .movie(movie)
+                        .cast(cast)
+                        .role("Acting")
+                        .build();
+
+                movieCastRepository.save(movieCast);
+            }
+        } catch (Exception e) {
+            log.error("Error processing movie credit for cast {} in movie {}: {}",
+                    cast.getName(), creditDTO.getTitle(), e.getMessage());
+            throw e;
+        }
+    }
+
+    private void processMovieCrewCredit(Cast cast, TMDBPersonCrewDTO crewDTO) {
+        try {
+            Movie movie = movieRepository.findByTmdbId(crewDTO.getId())
+                    .orElseGet(() -> {
+                        Movie newMovie = new Movie();
+                        newMovie.setTmdbId(crewDTO.getId());
+                        newMovie.setTitle(crewDTO.getTitle());
+                        newMovie.setPosterPath(crewDTO.getPosterPath());
+                        if (crewDTO.getReleaseDate() != null) {
+                            newMovie.setReleaseDate(LocalDate.parse(crewDTO.getReleaseDate()));
+                        }
+                        return movieRepository.save(newMovie);
+                    });
+
+            MovieCastId movieCastId = new MovieCastId(movie.getId(), cast.getId(), crewDTO.getJob());
+
+            if (!movieCastRepository.existsById(movieCastId)) {
+                MovieCast movieCast = MovieCast.builder()
+                        .id(movieCastId)
+                        .movie(movie)
+                        .cast(cast)
+                        .role(crewDTO.getDepartment())
+                        .build();
+
+                movieCastRepository.save(movieCast);
+            }
+        } catch (Exception e) {
+            log.error("Error processing crew credit for cast {} in movie {}: ",
+                    cast.getName(), crewDTO.getTitle(), e);
         }
     }
 }
