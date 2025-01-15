@@ -126,8 +126,11 @@ public class SpringSecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/sign-up", "/api/v1/auth/login").permitAll()
-                        .requestMatchers("/api/v1//oauth2/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/sign-up",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/verify/resend").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/oauth2/**").permitAll()
 
                         .requestMatchers("/api/tmdb/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/all").permitAll()

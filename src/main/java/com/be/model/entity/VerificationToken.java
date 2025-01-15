@@ -23,6 +23,7 @@ public class VerificationToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
     public VerificationToken(User user, String token) {
