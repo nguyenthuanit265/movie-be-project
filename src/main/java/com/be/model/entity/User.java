@@ -58,6 +58,9 @@ public class User extends BaseEntity {
     )
     private Set<Movie> favorites;
 
+    @OneToMany(mappedBy = "user")
+    private Set<MovieRating> ratings;
+
     private String provider;
 
     @Column(name = "provider_id")

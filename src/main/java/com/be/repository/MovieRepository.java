@@ -2,6 +2,7 @@ package com.be.repository;
 
 import com.be.model.entity.Genre;
 import com.be.model.entity.Movie;
+import com.be.model.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -121,4 +122,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
             @Param("genreIds") List<Long> genreIds,
             Pageable pageable
     );
+
+    Page<Movie> findByWatchlistedByOrderByUpdatedAtDesc(User user, Pageable pageable);
+    Page<Movie> findByFavoritedByOrderByUpdatedAtDesc(User user, Pageable pageable);
 }

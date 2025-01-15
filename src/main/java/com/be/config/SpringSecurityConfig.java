@@ -141,10 +141,10 @@ public class SpringSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/movies/trailers/latest").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/{movieId}/detail").permitAll()
 
+                        /*Cast*/
                         .requestMatchers("/api/casts/**").permitAll()
                         .requestMatchers("/api/casts/{castId}/detail").permitAll()
                         .requestMatchers("/api/casts/{castId}/movies").permitAll()
-
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()

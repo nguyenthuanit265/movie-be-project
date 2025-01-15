@@ -13,5 +13,8 @@ import java.util.Optional;
 @Repository
 public interface MovieRatingRepository extends JpaRepository<MovieRating, Long> {
     Optional<MovieRating> findByMovieAndUser(Movie movie, User user);
+
     Page<MovieRating> findByMovie(Movie movie, Pageable pageable);
+
+    Page<MovieRating> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
 }
