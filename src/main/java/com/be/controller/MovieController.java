@@ -2,6 +2,7 @@ package com.be.controller;
 
 
 import com.be.appexception.ResourceNotFoundException;
+import com.be.service.CastService;
 import com.be.service.MovieRecommendationService;
 import com.be.utils.SecurityUtils;
 import com.be.model.base.AppResponse;
@@ -26,13 +27,16 @@ public class MovieController {
     private final HttpServletRequest request;
     private final MovieService movieService;
     private final MovieRecommendationService movieRecommendationService;
+    private final CastService castService;
 
     public MovieController(HttpServletRequest request,
                            MovieService movieService,
-                           MovieRecommendationService movieRecommendationService) {
+                           MovieRecommendationService movieRecommendationService,
+                           CastService castService) {
         this.request = request;
         this.movieService = movieService;
         this.movieRecommendationService = movieRecommendationService;
+        this.castService = castService;
     }
 
     @ExceptionHandler(Exception.class)
@@ -180,18 +184,18 @@ public class MovieController {
 
     // Watchlist endpoints
     @PostMapping("/{movieId}/watchlist")
-    public ResponseEntity<AppResponse<Void>> addToWatchlist(
+    public ResponseEntity<AppResponse<Void>> toggleWatchlist(
             @PathVariable Long movieId) {
 
         Long userId = SecurityUtils.getCurrentUserId();
-        log.info("addToWatchlist userId = {}, movieId = {}", userId, movieId);
+        log.info("toggleWatchlist userId = {}, movieId = {}", userId, movieId);
         if (userId != null) {
-            movieService.addToWatchlist(movieId, userId);
+            movieService.toggleWatchlist(movieId, userId);
         }
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),
-                "Added to watchlist successfully",
+                "Watchlist toggle successfully",
                 HttpStatus.OK.value(),
                 null
         ));
@@ -343,4 +347,34 @@ public class MovieController {
 //                recommendations
 //        ));
 //    }
+
+    @GetMapping("/{castId}")
+    public ResponseEntity<AppResponse<CastDetailDTO>> getCastDetails(
+            @PathVariable Long castId) {
+        CastDetailDTO castDetails = castService.getCastDetails(castId);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Cast details retrieved successfully",
+                HttpStatus.OK.value(),
+                castDetails
+        ));
+    }
+
+    @GetMapping("/{castId}/movies")
+    public ResponseEntity<AppResponse<Page<MovieDTO>>> getCastMovies(
+            @PathVariable Long castId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<MovieDTO> movies = castService.getCastMovies(castId, PageRequest.of(page, size));
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Cast movies retrieved successfully",
+                HttpStatus.OK.value(),
+                movies
+        ));
+    }
 }

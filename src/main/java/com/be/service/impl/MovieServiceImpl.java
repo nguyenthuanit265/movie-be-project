@@ -191,6 +191,8 @@ public class MovieServiceImpl implements MovieService {
                 .orElseThrow(() -> new ResourceNotFoundException("Movie not found", "", "", ""));
 
         user.getWatchlist().add(movie);
+
+
         userRepository.save(user);
     }
 

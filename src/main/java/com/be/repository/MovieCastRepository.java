@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface MovieCastRepository extends JpaRepository<MovieCast, Long> {
     Page<MovieCast> findByMovie(Movie movie, Pageable pageable);
@@ -42,5 +44,21 @@ public interface MovieCastRepository extends JpaRepository<MovieCast, Long> {
             Pageable pageable
     );
 
+    @Query("SELECT mc FROM MovieCast mc " +
+            "LEFT JOIN FETCH mc.movie m " +
+            "WHERE mc.cast = :cast " +
+            "ORDER BY m.releaseDate DESC")
+    Page<MovieCast> findByCastOrderByMovieReleaseDateDesc(
+            @Param("cast") Cast cast,
+            Pageable pageable
+    );
+
+    // Additional useful methods
     boolean existsById(MovieCastId id);
+
+    @Query("SELECT mc FROM MovieCast mc " +
+            "WHERE mc.movie = :movie " +
+            "ORDER BY mc.id.character ASC")
+    List<MovieCast> findByMovie(@Param("movie") Movie movie);
+
 }
