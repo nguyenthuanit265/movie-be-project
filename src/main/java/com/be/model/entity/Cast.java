@@ -2,6 +2,7 @@ package com.be.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -30,6 +31,19 @@ public class Cast extends BaseEntity {
 
     @Column(name = "birth_date")
     private LocalDate birthDate;
+
+    @Column(name = "place_of_birth")
+    private String placeOfBirth;
+
+    @Column(name = "known_for_department")
+    private String knownForDepartment;
+
+    private Float popularity;
+
+    private String gender;  // Could be an enum if needed
+
+    @Column(name = "imdb_id")
+    private String imdbId;
 
     @OneToMany(mappedBy = "cast")
     private Set<MovieCast> movies;

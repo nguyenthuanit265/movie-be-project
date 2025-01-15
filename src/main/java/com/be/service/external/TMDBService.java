@@ -1076,4 +1076,77 @@ public class TMDBService {
         return processedReviews;
     }
 
+    public TMDBPersonDTO getCastDetails(Long castId) {
+        String url = String.format("%s/person/%d?append_to_response=movie_credits&language=en-US",
+                BASE_URL, castId);
+
+        log.info("TMDB API Request - Get Cast Details: {}", url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        log.info("TMDB API Response: {}", response.getBody());
+
+        return restTemplate.getForObject(url, TMDBPersonDTO.class);
+    }
+
+    @Transactional
+    public void syncCastDetails(Long castId) {
+        try {
+            TMDBPersonDTO personDTO = getCastDetails(castId);
+
+            Cast cast = castRepository.findByTmdbId(personDTO.getId())
+                    .orElse(new Cast());
+
+            // Update cast details
+            cast.setTmdbId(personDTO.getId());
+            cast.setName(personDTO.getName());
+            cast.setProfilePath(personDTO.getProfilePath());
+            cast.setBiography(personDTO.getBiography());
+            if (personDTO.getBirthDate() != null) {
+                cast.setBirthDate(LocalDate.parse(personDTO.getBirthDate()));
+            }
+            cast.setPlaceOfBirth(personDTO.getPlaceOfBirth());
+            cast.setKnownForDepartment(personDTO.getKnownForDepartment());
+            cast.setPopularity(personDTO.getPopularity());
+            cast.setGender(personDTO.getGender().toString());
+            cast.setImdbId(personDTO.getImdbId());
+
+            cast = castRepository.save(cast);
+
+            // Sync acting credits
+            if (personDTO.getMovieCredits() != null &&
+                    personDTO.getMovieCredits().getCast() != null) {
+                for (TMDBPersonCastDTO creditDTO : personDTO.getMovieCredits().getCast()) {
+                    Movie movie = movieRepository.findByTmdbId(creditDTO.getId())
+                            .orElseGet(() -> {
+                                // Create basic movie if not exists
+                                Movie newMovie = new Movie();
+                                newMovie.setTmdbId(creditDTO.getId());
+                                newMovie.setTitle(creditDTO.getTitle());
+                                newMovie.setPosterPath(creditDTO.getPosterPath());
+                                if (creditDTO.getReleaseDate() != null) {
+                                    newMovie.setReleaseDate(LocalDate.parse(creditDTO.getReleaseDate()));
+                                }
+                                return movieRepository.save(newMovie);
+                            });
+
+                    MovieCastId movieCastId = new MovieCastId(movie.getId(), cast.getId(), creditDTO.getCharacter());
+
+                    if (!movieCastRepository.existsById(movieCastId)) {
+                        MovieCast movieCast = MovieCast.builder()
+                                .id(movieCastId)
+                                .movie(movie)
+                                .cast(cast)
+                                .role(personDTO.getKnownForDepartment())
+                                .build();
+
+                        movieCastRepository.save(movieCast);
+                    }
+                }
+            }
+
+            log.info("Successfully synced cast details for: {}", cast.getName());
+        } catch (Exception e) {
+            log.error("Error syncing cast details for ID {}: ", castId, e);
+            throw e;
+        }
+    }
 }
