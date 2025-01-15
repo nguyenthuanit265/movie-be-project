@@ -27,16 +27,13 @@ public class MovieController {
     private final HttpServletRequest request;
     private final MovieService movieService;
     private final MovieRecommendationService movieRecommendationService;
-    private final CastService castService;
 
     public MovieController(HttpServletRequest request,
                            MovieService movieService,
-                           MovieRecommendationService movieRecommendationService,
-                           CastService castService) {
+                           MovieRecommendationService movieRecommendationService) {
         this.request = request;
         this.movieService = movieService;
         this.movieRecommendationService = movieRecommendationService;
-        this.castService = castService;
     }
 
     @ExceptionHandler(Exception.class)
@@ -347,34 +344,4 @@ public class MovieController {
 //                recommendations
 //        ));
 //    }
-
-    @GetMapping("/{castId}")
-    public ResponseEntity<AppResponse<CastDetailDTO>> getCastDetails(
-            @PathVariable Long castId) {
-        CastDetailDTO castDetails = castService.getCastDetails(castId);
-
-        return ResponseEntity.ok(AppResponse.buildResponse(
-                null,
-                request.getRequestURI(),
-                "Cast details retrieved successfully",
-                HttpStatus.OK.value(),
-                castDetails
-        ));
-    }
-
-    @GetMapping("/{castId}/movies")
-    public ResponseEntity<AppResponse<Page<MovieDTO>>> getCastMovies(
-            @PathVariable Long castId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Page<MovieDTO> movies = castService.getCastMovies(castId, PageRequest.of(page, size));
-
-        return ResponseEntity.ok(AppResponse.buildResponse(
-                null,
-                request.getRequestURI(),
-                "Cast movies retrieved successfully",
-                HttpStatus.OK.value(),
-                movies
-        ));
-    }
 }
