@@ -387,11 +387,11 @@ public class TMDBService {
                         // Only process trailers
                         if ("Trailer".equals(video.getType())) {
                             MovieTrailer trailer = movieTrailerRepository
-                                    .findByTmdbId(Long.valueOf(video.getId()))
+                                    .findByTmdbId(video.getId())
                                     .orElse(new MovieTrailer());
 
                             trailer.setMovie(movie);
-                            trailer.setTmdbId(Long.valueOf(video.getId()));
+                            trailer.setTmdbId(video.getId());
                             trailer.setName(video.getName());
                             trailer.setKey(video.getKey());
                             trailer.setSite(video.getSite());
@@ -412,7 +412,7 @@ public class TMDBService {
 
                 } catch (Exception e) {
                     log.error("Error processing trailers for movie {}: {}",
-                            movieDTO.getTitle(), e.getMessage());
+                            movieDTO.getTitle(), e.getMessage(), e);
                 }
             }
 
@@ -1066,7 +1066,7 @@ public class TMDBService {
                     processedReviews++;
                 } catch (Exception e) {
                     log.error("Error processing review for movie {}: {}",
-                            movie.getTitle(), e.getMessage());
+                            movie.getTitle(), e.getMessage(), e);
                 }
             }
 
@@ -1190,7 +1190,7 @@ public class TMDBService {
                     processMovieCastCredit(cast, creditDTO);
                 } catch (Exception e) {
                     log.error("Error processing cast credit for {} in movie {}: {}",
-                            cast.getName(), creditDTO.getTitle(), e.getMessage());
+                            cast.getName(), creditDTO.getTitle(), e.getMessage(), e);
                 }
             }
         }
@@ -1202,7 +1202,7 @@ public class TMDBService {
                     processMovieCrewCredit(cast, crewDTO);
                 } catch (Exception e) {
                     log.error("Error processing crew credit for {} in movie {}: {}",
-                            cast.getName(), crewDTO.getTitle(), e.getMessage());
+                            cast.getName(), crewDTO.getTitle(), e.getMessage(), e);
                 }
             }
         }
@@ -1250,7 +1250,7 @@ public class TMDBService {
             }
         } catch (Exception e) {
             log.error("Error processing movie credit for cast {} in movie {}: {}",
-                    cast.getName(), creditDTO.getTitle(), e.getMessage());
+                    cast.getName(), creditDTO.getTitle(), e.getMessage(), e);
             throw e;
         }
     }

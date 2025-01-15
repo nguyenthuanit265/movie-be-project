@@ -8,6 +8,7 @@ import com.be.model.base.AppResponse;
 import com.be.model.dto.auth.*;
 import com.be.model.entity.User;
 import com.be.repository.UserRepository;
+import com.be.service.AuthService;
 import com.be.service.PasswordResetService;
 import com.be.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final HttpServletRequest request;
     private final UserRepository userRepository;
+    private final AuthService authService;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -41,12 +43,14 @@ public class AuthController {
                           AuthenticationManager authManager,
                           PasswordResetService passwordResetService,
                           HttpServletRequest request,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          AuthService authService) {
         this.userService = userService;
         this.authManager = authManager;
         this.passwordResetService = passwordResetService;
         this.request = request;
         this.userRepository = userRepository;
+        this.authService = authService;
     }
 
     @ExceptionHandler({InvalidTokenException.class, TokenExpiredException.class})
@@ -122,6 +126,32 @@ public class AuthController {
                 null,
                 request.getRequestURI(),
                 "Password has been reset successfully",
+                HttpStatus.OK.value(),
+                null
+        ));
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<AppResponse<String>> verifyAccount(@RequestParam String token) {
+        String result = authService.verifyAccount(token);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                result,
+                HttpStatus.OK.value(),
+                null
+        ));
+    }
+
+    @PostMapping("/verify/resend")
+    public ResponseEntity<AppResponse<Void>> resendVerificationToken(@RequestParam String email) {
+        authService.resendVerificationToken(email);
+
+        return ResponseEntity.ok(AppResponse.buildResponse(
+                null,
+                request.getRequestURI(),
+                "Verification email sent",
                 HttpStatus.OK.value(),
                 null
         ));

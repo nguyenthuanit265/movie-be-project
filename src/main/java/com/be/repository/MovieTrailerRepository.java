@@ -41,6 +41,6 @@ public interface MovieTrailerRepository extends JpaRepository<MovieTrailer, Long
             "ORDER BY mt.publishedAt DESC")
     Page<MovieTrailer> findLatestOfficialTrailers(Pageable pageable);
 
-    Optional<MovieTrailer> findByTmdbId(Long tmdbId);
+    Optional<MovieTrailer> findByTmdbId(String tmdbId);
     List<MovieTrailer> findByMovieOrderByPublishedAtDesc(Movie movie);
 }

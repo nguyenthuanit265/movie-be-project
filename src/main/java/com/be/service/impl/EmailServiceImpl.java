@@ -1,5 +1,6 @@
 package com.be.service.impl;
 
+import com.be.model.entity.User;
 import com.be.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +38,26 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception e) {
             log.error("Error sending password reset email: ", e);
             throw new RuntimeException("Error sending email");
+        }
+    }
+
+
+    @Override
+    public void sendVerificationEmail(User user, String token) {
+        try {
+            String verificationUrl = hostFrontEnd + "/verify?token=" + token;
+
+            SimpleMailMessage email = new SimpleMailMessage();
+            email.setFrom(fromEmail);
+            email.setTo(user.getEmail());
+            email.setSubject("Account Verification");
+            email.setText("Please click the link below to verify your email:\n\n" + verificationUrl);
+
+            mailSender.send(email);
+            log.info("Verification email sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Error sending verification email: ", e);
+            throw new RuntimeException("Failed to send verification email");
         }
     }
 }

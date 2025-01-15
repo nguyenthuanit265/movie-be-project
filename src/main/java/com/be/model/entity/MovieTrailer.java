@@ -22,7 +22,7 @@ public class MovieTrailer extends BaseEntity {
     private Movie movie;
 
     @Column(name = "tmdb_id", unique = true)  // Add this field
-    private Long tmdbId;
+    private String tmdbId;
 
     private String key;  // YouTube video key
     private String name;
