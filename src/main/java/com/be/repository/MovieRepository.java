@@ -89,7 +89,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     @Query(value = """
         SELECT DISTINCT m.* FROM movies m
         JOIN movie_genres mg ON m.id = mg.movie_id
-        WHERE mg.genre_id IN :genreIds
+        WHERE 1=1 AND mg.genre_id IN :genreIds
         AND m.id NOT IN :excludeWatchlist
         AND m.id NOT IN :excludeFavorites
         ORDER BY m.popularity DESC, m.vote_average DESC
