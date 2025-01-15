@@ -126,6 +126,7 @@ public class SpringSecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**", "/oauth2/**", "/oauth2/authorization/google").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/sign-up",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/verify/resend").permitAll()
