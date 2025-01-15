@@ -59,7 +59,12 @@ public class UserServiceImpl implements UserService {
         }
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
-            return Optional.ofNullable(UserDto.builder().id(user.get().getId()).email(user.get().getEmail()).name(user.get().getFullName()).build());
+            return Optional.ofNullable(UserDto.builder()
+                    .id(user.get().getId())
+                    .email(user.get().getEmail())
+                    .name(user.get().getFullName())
+                    .isActive(user.get().getIsActive())
+                    .build());
         }
         return Optional.empty();
     }

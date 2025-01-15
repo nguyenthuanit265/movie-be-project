@@ -78,6 +78,10 @@ public class AuthController {
             return new ResponseEntity<>(AppResponse.buildResponse("", "", "User is not exist in system, please sign up", HttpStatus.UNAUTHORIZED.value(), request), HttpStatus.UNAUTHORIZED);
         }
 
+        if (Boolean.FALSE.equals(optUser.get().getIsActive())) {
+            return new ResponseEntity<>(AppResponse.buildResponse("", "", "User is not active in system, please verify account", HttpStatus.UNAUTHORIZED.value(), request), HttpStatus.UNAUTHORIZED);
+        }
+
         // Spring Security use authenticate function -> call functions loadUserByUsername and get username and password -> using PasswordEncoder Bean authenticate user login
         Authentication authentication = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
