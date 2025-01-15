@@ -74,10 +74,12 @@ public class MovieRecommendationServiceImpl implements MovieRecommendationServic
         } else {
             currentUser = null;
         }
-        return movieRepository.findSimilarMoviesByVector(
+
+        Page<MovieDTO> res = movieRepository.findSimilarMoviesByVector(
                 movie.getId(),
                 movie.getGenres().stream().map(Genre::getId).collect(Collectors.toList()),
                 pageable
-        ).map(item -> MovieDTO.fromEntity(movie, currentUser));
+        ).map(item -> MovieDTO.fromEntity(item, currentUser));
+        return res;
     }
 }
