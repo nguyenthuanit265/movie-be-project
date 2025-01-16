@@ -142,6 +142,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            rm -rf /tmp/firebase-service-account.json/
             echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/firebase-service-account.json
             
             
@@ -154,5 +155,3 @@ jobs:
             sleep 15
             echo "Container Logs:"
             docker logs movie-be-project
-            
-            rm /tmp/firebase-service-account.json
