@@ -20,6 +20,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+      - name: Create Firebase Service Account file
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > src/main/resources/firebase-service-account.json
 
       - name: Build with Maven
         env:
@@ -138,12 +142,17 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/firebase-service-account.json
+            
+            
             docker pull nguyenthuanit265/movie-be-project:latest
             
             docker stop movie-be-project || true
             docker rm movie-be-project || true
             
-            docker run -d --name movie-be-project -p 8081:8081 -e SPRING_DATASOURCE_URL="jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }} -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} -e SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} -e SPRING_MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" -e APP_TMDB_TOKEN="${{ secrets.TMDB_BEARER_TOKEN }}" nguyenthuanit265/movie-be-project:latest            
+            docker run -d --name movie-be-project -p 8081:8081 -v /tmp/firebase-service-account.json:/app/firebase-service-account.json -e SPRING_DATASOURCE_URL="jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }} -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} -e SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} -e SPRING_MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" -e APP_TMDB_TOKEN="${{ secrets.TMDB_BEARER_TOKEN }}" nguyenthuanit265/movie-be-project:latest            
             sleep 15
             echo "Container Logs:"
             docker logs movie-be-project
+            
+            rm /tmp/firebase-service-account.json
