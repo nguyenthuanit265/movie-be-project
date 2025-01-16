@@ -13,14 +13,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.lang.reflect.Proxy;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -128,7 +126,22 @@ public class SearchServiceImpl implements SearchService {
             response.setPopularity(rs.getFloat("popularity"));
             Array genreNames = rs.getArray("genre_names");
             if (genreNames != null) {
-                response.setGenreNames(List.of((String[]) genreNames.getArray()));
+                try {
+                    response.setGenreNames(
+                            Optional.ofNullable(genreNames)
+                                    .map(array -> {
+                                        try {
+                                            return (String[]) array.getArray();
+                                        } catch (SQLException e) {
+                                            return new String[0];
+                                        }
+                                    })
+                                    .map(List::of)
+                                    .orElse(Collections.emptyList())
+                    );
+                } catch (Exception e) {
+                    response.setGenreNames(Collections.emptyList());
+                }
             }
             return response;
         };

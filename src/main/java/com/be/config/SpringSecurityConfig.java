@@ -152,8 +152,8 @@ public class SpringSecurityConfig {
 
                         /*Search*/
                         .requestMatchers("/api/v1/search/multi").permitAll()
-
-
+                        .requestMatchers("/api/v1/search/movie").permitAll()
+                        .requestMatchers("/api/v1/search/person").permitAll()
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/resources/public").permitAll()
