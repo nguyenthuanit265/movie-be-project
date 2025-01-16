@@ -160,4 +160,10 @@ public class AuthController {
                 null
         ));
     }
+
+//    @PostMapping("/google")
+//    public ResponseEntity<AppResponse<AuthResponse>> googleLogin(@RequestBody GoogleLoginRequest request) {
+//        var authResponse = authService.loginWithGoogle(request.getIdToken());
+//        return new ResponseEntity<>(AppResponse.buildResponse(HttpStatus.OK, authResponse), HttpStatus.OK);
+//    }
 }
