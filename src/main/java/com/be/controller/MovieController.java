@@ -80,7 +80,7 @@ public class MovieController {
         return ResponseEntity.ok(AppResponse.buildResponse(
                 null,
                 request.getRequestURI(),
-                "Movies retrieved successfully",
+                "Movies retrieved successfully 111111",
                 HttpStatus.OK.value(),
                 pageResponse
         ));
